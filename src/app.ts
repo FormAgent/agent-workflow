@@ -1,12 +1,36 @@
-import { AIAgent } from "./agents/aiAgent";
+import { DataCleanTask, IntentRecognitionTask } from "./tasks";
+import { ContextManager } from "./workflow/ContextManager";
+import { TaskExecutor } from "./workflow/TaskExecutor";
+import { TaskRegistry } from "./workflow/TaskRegistry";
+import { WorkflowEngine } from "./workflow/Workflow";
 
-// 该文件是应用程序的入口点。它包含应用程序的主要逻辑和功能实现。
+import type { WorkflowDefinition } from "./workflow/Workflow";
+
+export const workflowDefinition: WorkflowDefinition = {
+  steps: [
+    DataCleanTask.name, // 顺序任务
+    [IntentRecognitionTask.name], // 并行任务
+  ],
+};
 
 async function main() {
-	const agent = new AIAgent();
-	const input = "What is AI?"; // 示例输入
-	const response = await agent.handleInput(input);
-	console.log(response);
+  const registry = new TaskRegistry();
+  const context = new ContextManager();
+  const executor = new TaskExecutor(context);
+  const engine = new WorkflowEngine(registry, executor);
+
+  // 注册任务
+  registry.register(new DataCleanTask());
+  registry.register(new IntentRecognitionTask());
+
+  // 设置初始上下文
+  context.set("rawData", "   What is the weather today?   ");
+
+  // 运行工作流
+  await engine.run(workflowDefinition);
+
+  // 查看最终上下文
+  console.log("Final Context:", context.getAll());
 }
 
 main();
