@@ -18,4 +18,8 @@ export class TaskExecutor {
     }
     console.log(`Task ${task.name} executed. Output:`, output);
   }
+
+  getContext(): ContextManager {
+    return this.contextManager;
+  }
 }
