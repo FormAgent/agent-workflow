@@ -1,26 +1,17 @@
 import { DataCleanTask, DefaultTask, IntentRecognitionTask, WeatherTask, workflowDefinition } from "./tasks";
 import { ContextManager } from "../ContextManager";
 import { TaskExecutor } from "../TaskExecutor";
-import { TaskRegistry } from "../TaskRegistry";
 import { WorkflowEngine } from "../Workflow";
 
 describe('顺序任务工作流测试', () => {
-  let registry: TaskRegistry;
   let context: ContextManager;
   let executor: TaskExecutor;
   let engine: WorkflowEngine;
 
   beforeEach(() => {
-    registry = new TaskRegistry();
     context = new ContextManager();
     executor = new TaskExecutor(context);
-    engine = new WorkflowEngine(registry, executor);
-
-    // 注册任务
-    registry.register(new DataCleanTask());
-    registry.register(new IntentRecognitionTask());
-    registry.register(new WeatherTask());
-    registry.register(new DefaultTask());
+    engine = new WorkflowEngine(executor);
   });
 
   test('可以识别的天气查询', async () => {

@@ -1,7 +1,7 @@
 import { ContextManager } from '../ContextManager';
-import { type DAG, DAGParser, DAGWorkflowEngine } from '../DAG';
+import type { DAG, DAGParser, DAGWorkflowEngine } from '../DAG';
 import { TaskExecutor } from '../TaskExecutor';
-import { type TaskInput, type TaskOutput, TaskRegistry } from '../TaskRegistry';
+import type { TaskInput, TaskOutput } from '../Task';
 import { TaskA, TaskB, TaskC, TaskD } from './dagTasks';
 
 const execute = async (input: TaskInput): Promise<TaskOutput> => {
@@ -68,10 +68,9 @@ const execute = async (input: TaskInput): Promise<TaskOutput> => {
 }
 
 async function main() {
-  const registry = new TaskRegistry();
   const context = new ContextManager();
   const executor = new TaskExecutor(context);
-  const engine = new DAGWorkflowEngine(registry, executor);
+  const engine = new DAGWorkflowEngine(executor);
 
   const taskA = new TaskA();
   const taskB = new TaskB();
@@ -85,11 +84,6 @@ async function main() {
   const dag: DAG = {
     tasks: [taskA, taskB, taskC, taskD],
   };
-  // 注册任务
-  registry.register(taskA);
-  registry.register(taskB);
-  registry.register(taskC);
-  registry.register(taskD);
 
   // 运行 DAG 工作流
   await engine.run(dag);

@@ -16,17 +16,3 @@ export interface Task {
   name: string; // 任务名称
   execute(input: TaskInput): Promise<TaskOutput>; // 执行逻辑
 }
-
-export class TaskRegistry {
-  private tasks: Set<Task> = new Set(); // 用 Set 存储唯一任务实例
-
-  // 注册任务
-  register(task: Task): void {
-    this.tasks.add(task);
-  }
-
-  // 获取所有任务
-  getTasks(): Task[] {
-    return Array.from(this.tasks);
-  }
-}

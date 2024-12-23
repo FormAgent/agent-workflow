@@ -1,5 +1,5 @@
 import type { WorkflowDefinition } from "../Workflow";
-import type { Task, TaskInput, TaskOutput } from "../TaskRegistry";
+import type { Task, TaskInput, TaskOutput } from "../Task";
 
 export class DataCleanTask implements Task {
   name = "DataCleanTask";

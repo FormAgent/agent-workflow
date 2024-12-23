@@ -1,0 +1,4 @@
+src/**/__tests__
+src/**/*.test.ts
+jest.config.js
+.vscode 

@@ -1,8 +1,6 @@
-import { ContextManager } from '../ContextManager';
-import { DAG, DAGParser } from '../DAG';
-import { TaskExecutor } from '../TaskExecutor';
-import type { TaskInput, TaskOutput, TaskRegistry } from '../TaskRegistry';
-import { WorkflowEngine } from '../Workflow';
+import type { DAG } from '../DAG';
+import { DAGParser } from '../DAG';
+import type { TaskInput, TaskOutput } from '../Task';
 import { TaskA, TaskB, TaskC, TaskD } from './dagTasks';
 const execute = async (input: TaskInput): Promise<TaskOutput> => {
   return {};
@@ -277,7 +275,7 @@ describe('一般的DAG任务调度', () => {
     for (let i = 1; i < tasks.length; i++) {
       // 每个任务随机依赖前面的1-3个任务
       const dependencyCount = Math.floor(Math.random() * 3) + 1;
-      const dependencies = [];
+      const dependencies: TaskA[] = [];
       for (let j = 0; j < dependencyCount && i - j - 1 >= 0; j++) {
         dependencies.push(tasks[i - j - 1]);
       }
@@ -293,6 +291,7 @@ describe('一般的DAG任务调度', () => {
     const endTime = Date.now();
 
     expect(response.length).toBeGreaterThan(0);
-    expect(endTime - startTime).toBeLessThan(1000); // 确保性能在可接受范围内
+    expect(endTime - startTime).toBeLessThan(1000);
   });
 });
+

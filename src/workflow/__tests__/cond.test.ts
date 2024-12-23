@@ -1,7 +1,7 @@
 import { ContextManager } from '../ContextManager';
-import { DAG, DAGParser, DAGTask, DAGWorkflowEngine } from '../DAG';
+import { DAG, DAGTask, DAGWorkflowEngine } from '../DAG';
 import { TaskExecutor } from '../TaskExecutor';
-import { TaskInput, TaskRegistry } from '../TaskRegistry';
+import type { TaskInput, TaskOutput } from '../Task';
 
 class TaskA implements DAGTask {
   name = 'TaskA';
@@ -49,16 +49,14 @@ class ConditionalTask implements DAGTask {
 }
 
 describe('条件分支DAG任务调度', () => {
-  let registry: TaskRegistry;
   let context: ContextManager;
   let executor: TaskExecutor;
   let engine: DAGWorkflowEngine;
 
   beforeEach(() => {
-    registry = new TaskRegistry();
     context = new ContextManager();
     executor = new TaskExecutor(context);
-    engine = new DAGWorkflowEngine(registry, executor);
+    engine = new DAGWorkflowEngine(executor);
   });
 
   test('条件分支执行 - 当条件为真时应该执行TaskB', async () => {
@@ -79,9 +77,6 @@ describe('条件分支DAG任务调度', () => {
     const dag: DAG = {
       tasks: [taskA, conditionalTask, taskB, taskC],
     };
-
-    // 注册任务
-    dag.tasks.forEach((task) => registry.register(task));
 
     context.set('value', 10);
     context.set('executionOrder', []);
@@ -116,9 +111,6 @@ describe('条件分支DAG任务调度', () => {
     const dag: DAG = {
       tasks: [taskA, conditionalTask, taskB, taskC],
     };
-
-    // 注册任务
-    dag.tasks.forEach((task) => registry.register(task));
 
     // 运行工作流
     await engine.run(dag);
@@ -156,9 +148,6 @@ describe('条件分支DAG任务调度', () => {
     const dag: DAG = {
       tasks: [taskA, conditionalTask, taskB, taskC],
     };
-
-    // 注册任务
-    dag.tasks.forEach((task) => registry.register(task));
 
     context.set('value', 10);
     context.set('executionOrder', []);
@@ -212,8 +201,6 @@ describe('条件分支DAG任务调度', () => {
       tasks: [taskA, conditionalTask1, conditionalTask2, taskB, taskC],
     };
 
-    dag.tasks.forEach(task => registry.register(task));
-
     context.set('value', 10);
     context.set('type', 'B');
     context.set('executionOrder', []);
@@ -264,8 +251,6 @@ describe('条件分支DAG任务调度', () => {
     const dag: DAG = {
       tasks: [taskA, conditionalTask, taskB, taskC, taskD],
     };
-
-    dag.tasks.forEach(task => registry.register(task));
 
     context.set('value', 10);
     context.set('executionOrder', []);
@@ -321,8 +306,6 @@ describe('条件分支DAG任务调度', () => {
       tasks: [dynamicTaskA, conditionalTask, taskB, taskC],
     };
 
-    dag.tasks.forEach(task => registry.register(task));
-
     // 测试动态条件分支 - 应该执行taskB
     context.set('initialValue', 6);
     context.set('executionOrder', []);
@@ -347,10 +330,9 @@ describe('条件分支DAG任务调度', () => {
   test('错误处理 - 条件分支执行失败', async () => {
     class FailingTask implements DAGTask {
       name = 'FailingTask';
-      dependsOn = Array<DAGTask>();
-      async execute(input: TaskInput) {
+      dependsOn: DAGTask[] = [];
+      async execute(input: TaskInput): Promise<TaskOutput> {
         throw new Error('Task execution failed');
-        return { ...input, executionOrder: [] };
       }
     }
 
@@ -377,8 +359,6 @@ describe('条件分支DAG任务调度', () => {
     const dag: DAG = {
       tasks: [taskA, conditionalTask, failingTask, taskC],
     };
-
-    dag.tasks.forEach(task => registry.register(task));
 
     context.set('value', 10);
     context.set('executionOrder', []);

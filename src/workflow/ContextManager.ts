@@ -1,6 +1,6 @@
 //上下文管理器
 // 上下文用于任务之间的数据共享，并动态更新
-import type { TaskInput } from './TaskRegistry';
+import type { TaskInput } from './Task';
 
 export class ContextManager {
   private context: TaskInput = {};

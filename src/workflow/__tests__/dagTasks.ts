@@ -1,10 +1,10 @@
 import type { DAG, DAGTask } from '../DAG';
-import type { TaskInput, TaskOutput } from '../TaskRegistry';
+import type { TaskInput, TaskOutput } from '../Task';
 
 export class TaskA implements DAGTask {
   name = 'TaskA';
   dependsOn = Array<DAGTask>();
-  
+
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log('Executing Task A (Data Cleaning)');
     return { cleanedData: 'Cleaned Data' };

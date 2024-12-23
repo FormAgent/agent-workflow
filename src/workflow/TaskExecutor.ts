@@ -1,7 +1,7 @@
 //任务执行器
 // 任务执行器用于调用任务逻辑，并将结果更新到上下文中
 import type { ContextManager } from './ContextManager';
-import type { Task } from './TaskRegistry';
+import type { Task } from './Task';
 
 export class TaskExecutor {
   private contextManager: ContextManager;

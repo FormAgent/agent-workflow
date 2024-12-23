@@ -17,7 +17,7 @@
 
 import type { ContextManager } from "./ContextManager";
 import type { TaskExecutor } from "./TaskExecutor";
-import type { Task, TaskRegistry } from "./TaskRegistry";
+import type { Task } from "./Task";
 
 // 条件分支
 export interface ConditionBranch {
@@ -38,11 +38,9 @@ export interface WorkflowDefinition {
 }
 
 export class WorkflowEngine {
-  private taskRegistry: TaskRegistry;
   private executor: TaskExecutor;
 
-  constructor(taskRegistry: TaskRegistry, executor: TaskExecutor) {
-    this.taskRegistry = taskRegistry;
+  constructor(executor: TaskExecutor) {
     this.executor = executor;
   }
 

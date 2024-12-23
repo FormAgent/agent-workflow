@@ -1,20 +1,12 @@
 import { DataCleanTask, DefaultTask, IntentRecognitionTask, WeatherTask, workflowDefinition } from "./tasks";
 import { ContextManager } from "../ContextManager";
 import { TaskExecutor } from "../TaskExecutor";
-import { TaskRegistry } from "../TaskRegistry";
 import { WorkflowEngine } from "../Workflow";
 
 async function main() {
-  const registry = new TaskRegistry();
   const context = new ContextManager();
   const executor = new TaskExecutor(context);
-  const engine = new WorkflowEngine(registry, executor);
-
-  // 注册任务
-  registry.register(new DataCleanTask());
-  registry.register(new IntentRecognitionTask());
-  registry.register(new WeatherTask());
-  registry.register(new DefaultTask());
+  const engine = new WorkflowEngine(executor);
 
   // 设置初始上下文
   context.set("rawData", "   What's the weather today?   ");

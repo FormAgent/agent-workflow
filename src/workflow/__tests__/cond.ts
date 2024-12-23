@@ -1,7 +1,7 @@
 import { ContextManager } from "../ContextManager";
-import { type DAG, DAGParser, DAGTask, DAGWorkflowEngine } from "../DAG";
+import type { DAG, DAGParser, DAGTask, DAGWorkflowEngine } from "../DAG";
 import { TaskExecutor } from "../TaskExecutor";
-import { type TaskInput, type TaskOutput, TaskRegistry } from "../TaskRegistry";
+import type { TaskInput, TaskOutput } from "../Task";
 
 class TaskA implements DAGTask {
   name = "TaskA";
@@ -13,7 +13,7 @@ class TaskA implements DAGTask {
 
 class TaskB implements DAGTask {
   name = "TaskB";
-  dependsOn = ["ConditionalTask"];
+  dependsOn: DAGTask[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log("Executing Task B");
     return {};
@@ -22,7 +22,7 @@ class TaskB implements DAGTask {
 
 class TaskC implements DAGTask {
   name = "TaskC";
-  dependsOn = ["ConditionalTask"];
+  dependsOn: DAGTask[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log("Executing Task C");
     return {};
@@ -31,36 +31,43 @@ class TaskC implements DAGTask {
 
 class ConditionalTask implements DAGTask {
   name = "ConditionalTask";
-  dependsOn = ["TaskA"];
-  branches = [
-    { condition: (ctx: ContextManager) => ctx.get("value") > 5, next: "TaskB" },
-    { condition: (ctx: ContextManager) => ctx.get("value") <= 5, next: "TaskC" },
-  ];
+  dependsOn: DAGTask[] = [];
+  branches: { condition: (ctx: ContextManager) => boolean; next: DAGTask | DAGTask[] }[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log("Executing ConditionalTask");
     return {};
   }
 }
 
+const taskA = new TaskA();
+const conditionalTask = new ConditionalTask();
+const taskB = new TaskB();
+const taskC = new TaskC();
+
+conditionalTask.branches = [
+  { condition: (ctx: ContextManager) => ctx.get("value") > 5, next: taskB },
+  { condition: (ctx: ContextManager) => ctx.get("value") <= 5, next: taskC },
+];
+
+conditionalTask.dependsOn = [taskA];
+taskB.dependsOn = [conditionalTask];
+taskC.dependsOn = [conditionalTask];
+
 const dagWithSwitch: DAG = {
   tasks: [
-    new TaskA(),
-    new ConditionalTask(),
-    new TaskB(),
-    new TaskC(),
+    taskA,
+    conditionalTask,
+    taskB,
+    taskC,
   ],
 };
 
 async function main() {
-  const registry = new TaskRegistry();
   const context = new ContextManager();
   const executor = new TaskExecutor(context);
-  const engine = new DAGWorkflowEngine(registry, executor);
+  const engine = new DAGWorkflowEngine(executor);
 
   console.log(DAGParser.getExecutionOrderWithLevels(dagWithSwitch)); 
-
-  // 注册任务
-  dagWithSwitch.tasks.forEach((task) => registry.register(task));
 
   // 设置初始上下文
   context.set("value", 5); // 改变此值以测试条件
