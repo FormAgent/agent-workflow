@@ -28,11 +28,11 @@
 ## 安装
 
 ```bash
-npm install workflow-engine
+npm install dag-workflow
 # 或
-yarn add workflow-engine
+yarn add dag-workflow
 # 或
-pnpm add workflow-engine
+pnpm add dag-workflow
 ```
 
 ## 快速开始
@@ -46,7 +46,7 @@ import {
   ContextManager,
   type Task,
   type TaskInput 
-} from 'workflow-engine';
+} from 'dag-workflow';
 
 // 定义任务
 class MyTask implements Task {
@@ -75,7 +75,7 @@ await engine.run({ tasks: [task] });
 ### 条件分支示例
 
 ```typescript
-import type { DAGTask, ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'dag-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';

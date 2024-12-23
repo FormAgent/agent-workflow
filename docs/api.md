@@ -173,7 +173,7 @@ type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 ### DAG Workflow Example
 
 ```typescript
-import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'workflow-engine';
+import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'dag-workflow';
 
 // Define tasks
 class TaskA implements DAGTask {
@@ -210,7 +210,7 @@ await engine.run(dag);
 ### Conditional Branch Example
 
 ```typescript
-import type { DAGTask, ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'dag-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';

@@ -173,7 +173,7 @@ type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 ### DAG 工作流示例
 
 ```typescript
-import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'workflow-engine';
+import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'dag-workflow';
 
 // 定义任务
 class TaskA implements DAGTask {
@@ -210,7 +210,7 @@ await engine.run(dag);
 ### 条件分支示例
 
 ```typescript
-import type { DAGTask, ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'dag-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';

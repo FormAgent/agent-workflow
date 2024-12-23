@@ -30,11 +30,11 @@ A powerful workflow engine that supports DAG (Directed Acyclic Graph) task sched
 ## Installation
 
 ```bash
-npm install workflow-engine
+npm install dag-workflow
 # or
-yarn add workflow-engine
+yarn add dag-workflow
 # or
-pnpm add workflow-engine
+pnpm add dag-workflow
 ```
 
 ## Quick Start
@@ -48,7 +48,7 @@ import {
   ContextManager,
   type Task,
   type TaskInput 
-} from 'workflow-engine';
+} from 'dag-workflow';
 
 // Define a task
 class MyTask implements Task {
@@ -78,7 +78,7 @@ await engine.run({ tasks: [task] });
 ### Conditional Branch Example
 
 ```typescript
-import type { DAGTask, ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'dag-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';
