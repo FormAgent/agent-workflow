@@ -1,13 +1,13 @@
 import { ContextManager } from "../ContextManager";
-import type { DAG, DAGParser, DAGTask, DAGWorkflowEngine } from "../DAG";
-import { TaskExecutor } from "../TaskExecutor";
+import { type DAG, DAGParser, type DAGTask, DAGWorkflowEngine } from "../DAG";
 import type { TaskInput, TaskOutput } from "../Task";
+import { TaskExecutor } from "../TaskExecutor";
 
 class TaskA implements DAGTask {
   name = "TaskA";
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log("Executing Task A");
-    return {...input};
+    return { ...input };
   }
 }
 
@@ -32,7 +32,10 @@ class TaskC implements DAGTask {
 class ConditionalTask implements DAGTask {
   name = "ConditionalTask";
   dependsOn: DAGTask[] = [];
-  branches: { condition: (ctx: ContextManager) => boolean; next: DAGTask | DAGTask[] }[] = [];
+  branches: {
+    condition: (ctx: ContextManager) => boolean;
+    next: DAGTask | DAGTask[];
+  }[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
     console.log("Executing ConditionalTask");
     return {};
@@ -54,12 +57,7 @@ taskB.dependsOn = [conditionalTask];
 taskC.dependsOn = [conditionalTask];
 
 const dagWithSwitch: DAG = {
-  tasks: [
-    taskA,
-    conditionalTask,
-    taskB,
-    taskC,
-  ],
+  tasks: [taskA, conditionalTask, taskB, taskC],
 };
 
 async function main() {
@@ -67,7 +65,7 @@ async function main() {
   const executor = new TaskExecutor(context);
   const engine = new DAGWorkflowEngine(executor);
 
-  console.log(DAGParser.getExecutionOrderWithLevels(dagWithSwitch)); 
+  console.log(DAGParser.getExecutionOrderWithLevels(dagWithSwitch));
 
   // 设置初始上下文
   context.set("value", 5); // 改变此值以测试条件

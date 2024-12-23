@@ -5,6 +5,7 @@
   - [目录](#目录)
   - [核心类](#核心类)
     - [DAGWorkflowEngine](#dagworkflowengine)
+    - [事件系统](#事件系统)
     - [WorkflowEngine](#workflowengine)
     - [TaskExecutor](#taskexecutor)
     - [ContextManager](#contextmanager)
@@ -34,6 +35,17 @@ class DAGWorkflowEngine {
   
   // 获取任务状态
   getTaskStatus(task: DAGTask): TaskStatus;
+  
+  // 事件监听
+  on(event: 'taskStatusChanged', handler: (task: DAGTask, status: TaskStatus) => void): void;
+}
+```
+
+### 事件系统
+```typescript
+type TaskStatusEvent = {
+  task: DAGTask;
+  status: TaskStatus;
 }
 ```
 
@@ -184,6 +196,10 @@ const context = new ContextManager();
 const executor = new TaskExecutor(context);
 const engine = new DAGWorkflowEngine(executor);
 
+engine.on('taskStatusChanged', (task, status) => {
+  console.log(`Task ${task.name} status: ${status}`);
+});
+
 const dag = {
   tasks: [new TaskA(), new TaskB()]
 };
@@ -194,7 +210,7 @@ await engine.run(dag);
 ### 条件分支示例
 
 ```typescript
-import { type DAGTask, ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'workflow-engine';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';

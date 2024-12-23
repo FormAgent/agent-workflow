@@ -1,7 +1,13 @@
-import { DataCleanTask, DefaultTask, IntentRecognitionTask, WeatherTask, workflowDefinition } from "./tasks";
 import { ContextManager } from "../ContextManager";
 import { TaskExecutor } from "../TaskExecutor";
 import { WorkflowEngine } from "../Workflow";
+import {
+  DataCleanTask,
+  DefaultTask,
+  IntentRecognitionTask,
+  WeatherTask,
+  workflowDefinition,
+} from "./tasks";
 
 async function main() {
   const context = new ContextManager();
@@ -25,7 +31,6 @@ async function main() {
 
   // 查看最终上下文
   console.log("Final Context:", context.getAll());
-
 }
 
 main();

@@ -1,6 +1,7 @@
-import type { ContextManager } from './ContextManager';
-import type { TaskExecutor } from './TaskExecutor';
-import type { Task } from './Task';
+import EventEmitter from "eventemitter3";
+import type { ContextManager } from "./ContextManager";
+import type { Task } from "./Task";
+import type { TaskExecutor } from "./TaskExecutor";
 
 export interface DAGTask extends Task {
   dependsOn?: DAGTask[]; // 前置任务
@@ -20,7 +21,7 @@ export interface DAG {
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DAGParser {
   static getExecutionOrderWithLevels(
-    dag: DAG
+    dag: DAG,
   ): { level: number; tasks: DAGTask[] }[] {
     const graph = new Map<DAGTask, DAGTask[]>(); // 邻接表：任务图
     const inDegree = new Map<DAGTask, number>(); // 入度表：记录任务的依赖数量
@@ -95,7 +96,7 @@ export class DAGParser {
     while (queue.length > 0) {
       const taskName = queue.shift();
       if (!taskName) {
-        throw new Error('Unexpected empty queue');
+        throw new Error("Unexpected empty queue");
       }
       const currentLevel = levels.get(taskName);
       if (currentLevel === undefined) {
@@ -122,7 +123,7 @@ export class DAGParser {
 
     // 检查循环依赖
     if (levels.size !== dag.tasks.length) {
-      throw new Error('Cyclic dependency detected in the task graph');
+      throw new Error("Cyclic dependency detected in the task graph");
     }
 
     // 不再反转结果，保持从低层级到高层级的顺序
@@ -130,9 +131,9 @@ export class DAGParser {
   }
 }
 
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type TaskStatus = "pending" | "running" | "completed" | "failed";
 
-export class DAGWorkflowEngine {
+export class DAGWorkflowEngine extends EventEmitter {
   private executor: TaskExecutor;
   private executingTasks: Set<DAGTask> = new Set();
   private taskStatus: Map<DAGTask, TaskStatus> = new Map();
@@ -140,6 +141,7 @@ export class DAGWorkflowEngine {
   private completedTasks: Set<DAGTask> = new Set();
 
   constructor(executor: TaskExecutor) {
+    super();
     this.executor = executor;
   }
 
@@ -156,14 +158,14 @@ export class DAGWorkflowEngine {
         (task) =>
           !this.executingTasks.has(task) &&
           !this.skipTasks.has(task) &&
-          !this.completedTasks.has(task)
+          !this.completedTasks.has(task),
       );
 
       await Promise.all(
         tasksToExecute.map(async (task) => {
           this.executingTasks.add(task);
           try {
-            await this.executor.execute(task);
+            await this.runTask(task);
             this.completedTasks.add(task);
 
             if (task.branches) {
@@ -171,8 +173,8 @@ export class DAGWorkflowEngine {
               for (const branch of task.branches) {
                 if (branch.condition(this.executor.getContext())) {
                   console.debug(
-                    'Condition met for branch, executing next tasks:',
-                    branch.next
+                    "Condition met for branch, executing next tasks:",
+                    branch.next,
                   );
                   this.addOtherBranchesToSkip(task, branch.next);
                   await this.executeNext(branch.next);
@@ -183,7 +185,7 @@ export class DAGWorkflowEngine {
               if (!branchTaken && task.defaultNext) {
                 console.debug(
                   "No conditions met, executing default tasks:",
-                  task.defaultNext
+                  task.defaultNext,
                 );
                 this.addOtherBranchesToSkip(task, task.defaultNext);
                 await this.executeNext(task.defaultNext);
@@ -192,18 +194,18 @@ export class DAGWorkflowEngine {
           } finally {
             this.executingTasks.delete(task);
           }
-        })
+        }),
       );
     }
-    console.info('Workflow completed.');
+    console.info("Workflow completed.");
   }
 
   private addOtherBranchesToSkip(
     task: DAGTask,
-    selectedPath: DAGTask | DAGTask[]
+    selectedPath: DAGTask | DAGTask[],
   ) {
     const selectedTasks = new Set(
-      Array.isArray(selectedPath) ? selectedPath : [selectedPath]
+      Array.isArray(selectedPath) ? selectedPath : [selectedPath],
     );
 
     // 收集所有可能的分支路径
@@ -248,33 +250,57 @@ export class DAGWorkflowEngine {
   private async runTask(task: DAGTask): Promise<void> {
     if (this.skipTasks.has(task) || this.completedTasks.has(task)) {
       console.debug(
-        `Skipping task ${task} as it's either in an unused branch or already completed`
+        `Skipping task ${task} as it's either in an unused branch or already completed`,
       );
       return;
     }
 
     // Update status to 'running'
-    await this.updateTaskStatus(task, 'running');
+    await this.updateTaskStatus(task, "running");
 
-    try {
-      await this.executor.execute(task);
-      this.completedTasks.add(task);
+    let attempts = 0;
+    const maxAttempts = task.retryCount ?? 1;
+    let lastError: Error | null = null;
 
-      // Update status to 'completed'
-      await this.updateTaskStatus(task, 'completed');
-    } catch (error) {
-      // Update status to 'failed'
-      await this.updateTaskStatus(task, 'failed');
-      throw error; // Re-throw the error after updating the status
+    while (attempts < maxAttempts) {
+      try {
+        await this.executor.execute(task);
+
+        // Mark as completed and update status only after successful execution
+        this.completedTasks.add(task);
+        await this.updateTaskStatus(task, "completed");
+        return;
+      } catch (error) {
+        lastError = error as Error;
+        attempts++;
+
+        // Call onError for every failure attempt
+        if (task.onError) {
+          await task.onError(lastError, this.executor.getContext());
+        }
+
+        // If we still have retries left, log and continue
+        if (attempts < maxAttempts) {
+          console.debug(
+            `Task execution failed (attempt ${attempts}/${maxAttempts}), retrying...`,
+            lastError,
+          );
+          continue;
+        }
+
+        // On final attempt, mark as failed and throw
+        await this.updateTaskStatus(task, "failed");
+        throw lastError;
+      }
     }
   }
 
   private async updateTaskStatus(task: DAGTask, status: TaskStatus) {
     this.taskStatus.set(task, status);
-    // 可以添加状态变更的回调或事件发射
+    this.emit("taskStatusChanged", task, status);
   }
 
   getTaskStatus(task: DAGTask): TaskStatus {
-    return this.taskStatus.get(task) || 'pending';
+    return this.taskStatus.get(task) || "pending";
   }
 }

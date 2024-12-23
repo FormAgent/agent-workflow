@@ -16,8 +16,8 @@
 // 条件分支可以访问并使用上下文数据，确保动态性和灵活性。
 
 import type { ContextManager } from "./ContextManager";
-import type { TaskExecutor } from "./TaskExecutor";
 import type { Task } from "./Task";
+import type { TaskExecutor } from "./TaskExecutor";
 
 // 条件分支
 export interface ConditionBranch {
@@ -48,7 +48,7 @@ export class WorkflowEngine {
     for (const step of workflow.steps) {
       if (Array.isArray(step)) {
         // 并行任务
-        await Promise.all(step.map(task => this.runTask(task)));
+        await Promise.all(step.map((task) => this.runTask(task)));
       } else if (this.isConditionNode(step)) {
         // 条件分支
         await this.handleConditionNode(step as ConditionNode);
@@ -82,7 +82,7 @@ export class WorkflowEngine {
 
   private async executeNext(next: Task | Task[]): Promise<void> {
     if (Array.isArray(next)) {
-      await Promise.all(next.map(task => this.runTask(task)));
+      await Promise.all(next.map((task) => this.runTask(task)));
     } else {
       await this.runTask(next);
     }

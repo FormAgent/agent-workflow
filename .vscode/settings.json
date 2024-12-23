@@ -1,4 +1,10 @@
 {
   "jestrunner.changeDirectoryToWorkspaceRoot": false,
-  "jest.rootPath": "${workspaceFolder}"
+  "jest.rootPath": "${workspaceFolder}",
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports.biome": true,
+    "source.fixAll.biome": true
+  }
 }

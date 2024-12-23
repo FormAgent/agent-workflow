@@ -8,6 +8,7 @@
   - 支持复杂的任务依赖关系
   - 自动检测循环依赖
   - 支持多层级任务执行
+  - 任务重试机制
   
 - 🔀 条件分支
   - 动态条件判断
@@ -22,6 +23,7 @@
   - 任务间数据共享
   - 动态上下文更新
   - 状态追踪
+  - 任务状态变更通知
 
 ## 安装
 
@@ -51,6 +53,7 @@ class MyTask implements Task {
   name = 'MyTask';
   async execute(input: TaskInput) {
     // 任务逻辑
+    if (!someCondition) throw new Error('Task failed');
     return { result: 'done' };
   }
 }
@@ -61,6 +64,10 @@ const executor = new TaskExecutor(context);
 const engine = new DAGWorkflowEngine(executor);
 
 // 运行任务
+engine.on('taskStatusChanged', (task, status) => {
+  console.log(`Task ${task.name} status changed to ${status}`);
+});
+
 const task = new MyTask();
 await engine.run({ tasks: [task] });
 ```
@@ -68,12 +75,13 @@ await engine.run({ tasks: [task] });
 ### 条件分支示例
 
 ```typescript
-import { type DAGTask, type ContextManager } from 'workflow-engine';
+import type { DAGTask, ContextManager } from 'workflow-engine';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';
   branches = [{
     condition: (ctx: ContextManager) => ctx.get('value') > 5,
+    retryCount: 3,
     next: new TaskB()
   }];
   defaultNext = new TaskC();

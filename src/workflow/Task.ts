@@ -13,6 +13,6 @@ export interface TaskOutput {
 }
 
 export interface Task {
-  name: string; // 任务名称
+  name?: string; // 任务名称
   execute(input: TaskInput): Promise<TaskOutput>; // 执行逻辑
 }
