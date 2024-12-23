@@ -1,47 +1,47 @@
-# API Documentation
+# API 文档
 
-## Table of Contents
-- [API Documentation](#api-documentation)
-  - [Table of Contents](#table-of-contents)
-  - [Core Classes](#core-classes)
+## 目录
+- [API 文档](#api-文档)
+  - [目录](#目录)
+  - [核心类](#核心类)
     - [DAGWorkflowEngine](#dagworkflowengine)
-    - [Event System](#event-system)
+    - [事件系统](#事件系统)
     - [WorkflowEngine](#workflowengine)
     - [TaskExecutor](#taskexecutor)
     - [ContextManager](#contextmanager)
-  - [Interfaces](#interfaces)
+  - [接口](#接口)
     - [Task](#task)
     - [DAGTask](#dagtask)
     - [WorkflowDefinition](#workflowdefinition)
-  - [Types](#types)
+  - [类型](#类型)
     - [TaskInput/TaskOutput](#taskinputtaskoutput)
     - [TaskStatus](#taskstatus)
-  - [Usage Examples](#usage-examples)
-    - [DAG Workflow Example](#dag-workflow-example)
-    - [Conditional Branch Example](#conditional-branch-example)
-    - [Error Handling Example](#error-handling-example)
+  - [使用示例](#使用示例)
+    - [DAG 工作流示例](#dag-工作流示例)
+    - [条件分支示例](#条件分支示例)
+    - [错误处理示例](#错误处理示例)
 
-## Core Classes
+## 核心类
 
 ### DAGWorkflowEngine
-DAG workflow engine for executing DAG-based task flows.
+DAG 工作流引擎，用于执行基于 DAG 的任务流。
 
 ```typescript
 class DAGWorkflowEngine {
   constructor(executor: TaskExecutor);
   
-  // Run DAG workflow
+  // 运行 DAG 工作流
   async run(dag: DAG): Promise<void>;
   
-  // Get task status
+  // 获取任务状态
   getTaskStatus(task: DAGTask): TaskStatus;
   
-  // Event listening
+  // 事件监听
   on(event: 'taskStatusChanged', handler: (task: DAGTask, status: TaskStatus) => void): void;
 }
 ```
 
-### Event System
+### 事件系统
 ```typescript
 type TaskStatusEvent = {
   task: DAGTask;
@@ -50,55 +50,55 @@ type TaskStatusEvent = {
 ```
 
 ### WorkflowEngine
-Base workflow engine supporting sequential execution, conditional branching, and parallel tasks.
+基础工作流引擎，支持顺序执行、条件分支和并行任务。
 
 ```typescript
 class WorkflowEngine {
   constructor(executor: TaskExecutor);
   
-  // Run workflow
+  // 运行工作流
   async run(workflow: WorkflowDefinition): Promise<void>;
 }
 ```
 
 ### TaskExecutor
-Task executor responsible for actual task execution and context management.
+任务执行器，负责任务的实际执行和上下文管理。
 
 ```typescript
 class TaskExecutor {
   constructor(contextManager: ContextManager);
   
-  // Execute single task
+  // 执行单个任务
   async execute(task: Task): Promise<void>;
   
-  // Get context manager
+  // 获取上下文管理器
   getContext(): ContextManager;
 }
 ```
 
 ### ContextManager
-Context manager handling data sharing between tasks.
+上下文管理器，处理任务间的数据共享。
 
 ```typescript
 class ContextManager {
-  // Set context data
+  // 设置上下文数据
   set(key: string, value: any): void;
   
-  // Get context data
+  // 获取上下文数据
   get(key: string): any;
   
-  // Get all context data
+  // 获取所有上下文数据
   getAll(): Record<string, any>;
   
-  // Clear context
+  // 清除上下文
   clear(): void;
 }
 ```
 
-## Interfaces
+## 接口
 
 ### Task
-Base task interface.
+基础任务接口。
 
 ```typescript
 interface Task {
@@ -108,32 +108,32 @@ interface Task {
 ```
 
 ### DAGTask
-DAG task interface extending base task interface.
+DAG 任务接口，扩展自基础任务接口。
 
 ```typescript
 interface DAGTask extends Task {
-  // Task dependencies
+  // 前置任务依赖
   dependsOn?: DAGTask[];
   
-  // Conditional branches
+  // 条件分支
   branches?: {
     condition: (context: ContextManager) => boolean;
     next: DAGTask | DAGTask[];
   }[];
   
-  // Default branch
+  // 默认分支
   defaultNext?: DAGTask | DAGTask[];
   
-  // Error handling
+  // 错误处理
   onError?: (error: Error, context: ContextManager) => Promise<void>;
   
-  // Retry count
+  // 重试次数
   retryCount?: number;
 }
 ```
 
 ### WorkflowDefinition
-Workflow definition interface.
+工作流定义接口。
 
 ```typescript
 interface WorkflowDefinition {
@@ -151,10 +151,10 @@ interface ConditionBranch {
 }
 ```
 
-## Types
+## 类型
 
 ### TaskInput/TaskOutput
-Task input/output types.
+任务的输入输出类型。
 
 ```typescript
 type TaskInput = Record<string, any>;
@@ -162,20 +162,20 @@ type TaskOutput = Record<string, any>;
 ```
 
 ### TaskStatus
-Task status enumeration.
+任务状态枚举。
 
 ```typescript
 type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 ```
 
-## Usage Examples
+## 使用示例
 
-### DAG Workflow Example
+### DAG 工作流示例
 
 ```typescript
 import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'workflow-engine';
 
-// Define tasks
+// 定义任务
 class TaskA implements DAGTask {
   name = 'TaskA';
   async execute(input) {
@@ -191,7 +191,7 @@ class TaskB implements DAGTask {
   }
 }
 
-// Create and run workflow
+// 创建并运行工作流
 const context = new ContextManager();
 const executor = new TaskExecutor(context);
 const engine = new DAGWorkflowEngine(executor);
@@ -207,14 +207,13 @@ const dag = {
 await engine.run(dag);
 ```
 
-### Conditional Branch Example
+### 条件分支示例
 
 ```typescript
 import type { DAGTask, ContextManager } from 'workflow-engine';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';
-  retryCount = 3; // Retry 3 times on failure
   
   branches = [{
     condition: (ctx: ContextManager) => ctx.get('value') > 5,
@@ -224,13 +223,13 @@ class ConditionalTask implements DAGTask {
   defaultNext = new TaskC();
   
   async execute(input) {
-    // Processing logic
+    // 处理逻辑
     return input;
   }
 }
 ```
 
-### Error Handling Example
+### 错误处理示例
 
 ```typescript
 class RetryableTask implements DAGTask {
@@ -239,11 +238,11 @@ class RetryableTask implements DAGTask {
   
   async onError(error: Error, context: ContextManager) {
     context.set('lastError', error.message);
-    // Error handling logic
+    // 错误处理逻辑
   }
   
   async execute(input) {
-    // Task logic that might throw errors
+    // 可能抛出错误的任务逻辑
     return input;
   }
 }
