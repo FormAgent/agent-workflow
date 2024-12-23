@@ -18,15 +18,15 @@ export interface Task {
 }
 
 export class TaskRegistry {
-  private tasks: Map<string, Task> = new Map();
+  private tasks: Set<Task> = new Set(); // 用 Set 存储唯一任务实例
 
   // 注册任务
   register(task: Task): void {
-    this.tasks.set(task.name, task);
+    this.tasks.add(task);
   }
 
-  // 获取任务
-  getTask(name: string): Task | undefined {
-    return this.tasks.get(name);
+  // 获取所有任务
+  getTasks(): Task[] {
+    return Array.from(this.tasks);
   }
 }

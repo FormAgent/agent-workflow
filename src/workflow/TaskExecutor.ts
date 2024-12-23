@@ -16,7 +16,7 @@ export class TaskExecutor {
     for (const [key, value] of Object.entries(output)) {
       this.contextManager.set(key, value); // 更新上下文
     }
-    console.log(`Task ${task.name} executed. Output:`, output);
+    console.log(`Task ${task} executed. Output:`, output);
   }
 
   getContext(): ContextManager {

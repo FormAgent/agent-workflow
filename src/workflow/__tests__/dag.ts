@@ -1,51 +1,70 @@
-import { ContextManager } from "../ContextManager";
-import { type DAG, DAGParser, DAGWorkflowEngine } from "../DAG";
-import { TaskExecutor } from "../TaskExecutor";
-import { type TaskInput, type TaskOutput, TaskRegistry } from "../TaskRegistry";
-import { dag, TaskA, TaskB, TaskC, TaskD } from "./dagTasks";
+import { ContextManager } from '../ContextManager';
+import { type DAG, DAGParser, DAGWorkflowEngine } from '../DAG';
+import { TaskExecutor } from '../TaskExecutor';
+import { type TaskInput, type TaskOutput, TaskRegistry } from '../TaskRegistry';
+import { TaskA, TaskB, TaskC, TaskD } from './dagTasks';
 
-const execute = async (input: TaskInput): Promise<TaskOutput> => { return {}; }
-const dag1: DAG = {
-  tasks: [
-    { name: "TaskA", execute },
-    { name: "TaskB", dependsOn: ["TaskA"], execute },
-    { name: "TaskC", dependsOn: ["TaskB"], execute },
-    { name: "TaskD", dependsOn: ["TaskA"], execute },
-  ],
+const execute = async (input: TaskInput): Promise<TaskOutput> => {
+  return {};
 };
-console.log(DAGParser.getExecutionOrderWithLevels(dag1)); // 输出: ["TaskA", "TaskB", "TaskC"]
+{
+  const taskA = new TaskA();
+  const taskB = new TaskB();
+  const taskC = new TaskC();
+  const taskD = new TaskD();
 
-const dag2: DAG = {
-  tasks: [
-    { name: "TaskA", execute },
-    { name: "TaskB", dependsOn: ["TaskA"], execute },
-    { name: "TaskC", dependsOn: ["TaskA"], execute },
-    { name: "TaskD", dependsOn: ["TaskB", "TaskC"], execute },
-  ],
-};
-console.log(DAGParser.getExecutionOrderWithLevels(dag2)); // 输出: ["TaskA", "TaskB", "TaskC", "TaskD"]
+  taskB.dependsOn = [taskA];
+  taskC.dependsOn = [taskB];
+  taskD.dependsOn = [taskA];
 
-const dag3: DAG = {
-  tasks: [
-    { name: "TaskA", execute },
-    { name: "TaskB" , execute},
-    { name: "TaskC", execute },
-  ],
-};
-console.log(DAGParser.getExecutionOrderWithLevels(dag3)); // 输出: ["TaskA", "TaskB", "TaskC"]（顺序可能不同）
+  const dag1: DAG = {
+    tasks: [taskA, taskB, taskC, taskD],
+  };
+  console.log(DAGParser.getExecutionOrderWithLevels(dag1)); // 输出: ["TaskA", "TaskB", "TaskC"]
+}
+{
+  const taskA = new TaskA();
+  const taskB = new TaskB();
+  const taskC = new TaskC();
+  const taskD = new TaskD();
 
-const dag4: DAG = {
-  tasks: [
-    { name: "TaskA", dependsOn: ["TaskC"], execute },
-    { name: "TaskB", dependsOn: ["TaskA"], execute },
-    { name: "TaskC", dependsOn: ["TaskB"], execute },
-  ],
-};
-try {
-  console.log(DAGParser.getExecutionOrderWithLevels(dag4));
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-} catch (error:any) {
-  console.error(error.message); // 输出: "Cyclic dependency detected in the task graph"
+  taskB.dependsOn = [taskA];
+  taskC.dependsOn = [taskA];
+  taskD.dependsOn = [taskB, taskC];
+
+  const dag2: DAG = {
+    tasks: [taskA, taskB, taskC, taskD],
+  };
+  console.log(DAGParser.getExecutionOrderWithLevels(dag2)); // 输出: ["TaskA", "TaskB", "TaskC", "TaskD"]
+}
+
+{
+  const taskA = new TaskA();
+  const taskB = new TaskB();
+  const taskC = new TaskC();
+  const dag3: DAG = {
+    tasks: [taskA, taskB, taskC],
+  };
+  console.log(DAGParser.getExecutionOrderWithLevels(dag3)); // 输出: ["TaskA", "TaskB", "TaskC"]（顺序可能不同）
+}
+
+{
+  const taskA = new TaskA();
+  const taskB = new TaskB();
+  const taskC = new TaskC();
+
+  taskA.dependsOn = [taskC];
+  taskB.dependsOn = [taskA];
+  taskC.dependsOn = [taskB];
+  const dag4: DAG = {
+    tasks: [taskA, taskB, taskC],
+  };
+  try {
+    console.log(DAGParser.getExecutionOrderWithLevels(dag4));
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  } catch (error: any) {
+    console.error(error.message); // 输出: "Cyclic dependency detected in the task graph"
+  }
 }
 
 async function main() {
@@ -54,11 +73,23 @@ async function main() {
   const executor = new TaskExecutor(context);
   const engine = new DAGWorkflowEngine(registry, executor);
 
+  const taskA = new TaskA();
+  const taskB = new TaskB();
+  const taskC = new TaskC();
+  const taskD = new TaskD();
+
+  taskB.dependsOn = [taskA];
+  taskC.dependsOn = [taskB];
+  taskD.dependsOn = [taskA];
+
+  const dag: DAG = {
+    tasks: [taskA, taskB, taskC, taskD],
+  };
   // 注册任务
-  registry.register(new TaskA());
-  registry.register(new TaskB());
-  registry.register(new TaskC());
-  registry.register(new TaskD());
+  registry.register(taskA);
+  registry.register(taskB);
+  registry.register(taskC);
+  registry.register(taskD);
 
   // 运行 DAG 工作流
   await engine.run(dag);

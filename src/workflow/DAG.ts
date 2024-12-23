@@ -3,12 +3,12 @@ import type { TaskExecutor } from './TaskExecutor';
 import type { Task, TaskRegistry } from './TaskRegistry';
 
 export interface DAGTask extends Task {
-  dependsOn?: string[]; // 前置任务
+  dependsOn?: DAGTask[]; // 前置任务
   branches?: {
     condition: (context: ContextManager) => boolean; // 条件函数
-    next: string | string[]; // 满足条件时的后续任务
+    next: DAGTask | DAGTask[]; // 满足条件时的后续任务
   }[];
-  defaultNext?: string | string[]; // 默认路径（条件不满足时）
+  defaultNext?: DAGTask | DAGTask[]; // 默认路径（条件不满足时）
   onError?: (error: Error, context: ContextManager) => Promise<void>;
   retryCount?: number;
 }
@@ -21,21 +21,21 @@ export interface DAG {
 export class DAGParser {
   static getExecutionOrderWithLevels(
     dag: DAG
-  ): { level: number; tasks: string[] }[] {
-    const graph = new Map<string, string[]>(); // 任务图，映射每个任务到其依赖它的任务
-    const inDegree = new Map<string, number>(); // 入度表，映射每个任务到其依赖的任务数量
-    const levels = new Map<string, number>(); // 每个任务的层级
+  ): { level: number; tasks: DAGTask[] }[] {
+    const graph = new Map<DAGTask, DAGTask[]>(); // 邻接表：任务图
+    const inDegree = new Map<DAGTask, number>(); // 入度表：记录任务的依赖数量
+    const levels = new Map<DAGTask, number>(); // 每个任务的层级
 
     // 初始化图，确保所有任务都有一个入口
     for (const task of dag.tasks) {
-      if (!graph.has(task.name)) {
-        graph.set(task.name, []);
+      if (!graph.has(task)) {
+        graph.set(task, []);
       }
     }
 
     // 初始化入度表和构建依赖关系
     for (const task of dag.tasks) {
-      inDegree.set(task.name, task.dependsOn ? task.dependsOn.length : 0);
+      inDegree.set(task, task.dependsOn ? task.dependsOn.length : 0);
       
       // 处理显式依赖
       if (task.dependsOn) {
@@ -43,7 +43,7 @@ export class DAGParser {
           if (!graph.has(dependency)) {
             graph.set(dependency, []);
           }
-          graph.get(dependency)?.push(task.name);
+          graph.get(dependency)?.push(task);
         }
       }
 
@@ -58,7 +58,7 @@ export class DAGParser {
               graph.set(next, []);
             }
             // 维持原来的依赖方向：next 任务依赖于当前任务
-            graph.get(task.name)?.push(next);
+            graph.get(task)?.push(next);
             const currentDegree = inDegree.get(next) || 0;
             inDegree.set(next, currentDegree + 1);
           }
@@ -75,7 +75,7 @@ export class DAGParser {
             graph.set(next, []);
           }
           // 维持原来的依赖方向：next 任务依赖于当前任务
-          graph.get(task.name)?.push(next);
+          graph.get(task)?.push(next);
           const currentDegree = inDegree.get(next) || 0;
           inDegree.set(next, currentDegree + 1);
         }
@@ -83,15 +83,15 @@ export class DAGParser {
     }
 
     // 初始化队列，将入度为0的任务加入队列
-    const queue: string[] = [];
-    for (const [taskName, degree] of inDegree.entries()) {
+    const queue: DAGTask[] = [];
+    for (const [task, degree] of inDegree.entries()) {
       if (degree === 0) {
-        queue.push(taskName);
-        levels.set(taskName, 0);
+        queue.push(task);
+        levels.set(task, 0);
       }
     }
 
-    const result: { level: number; tasks: string[] }[] = [];
+    const result: { level: number; tasks: DAGTask[] }[] = [];
     while (queue.length > 0) {
       const taskName = queue.shift();
       if (!taskName) {
@@ -135,10 +135,10 @@ export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 export class DAGWorkflowEngine {
   private taskRegistry: TaskRegistry;
   private executor: TaskExecutor;
-  private executingTasks: Set<string> = new Set();
-  private taskStatus: Map<string, TaskStatus> = new Map();
-  private skipTasks: Set<string> = new Set();
-  private completedTasks: Set<string> = new Set();
+  private executingTasks: Set<DAGTask> = new Set();
+  private taskStatus: Map<DAGTask, TaskStatus> = new Map();
+  private skipTasks: Set<DAGTask> = new Set();
+  private completedTasks: Set<DAGTask> = new Set();
 
   constructor(taskRegistry: TaskRegistry, executor: TaskExecutor) {
     this.taskRegistry = taskRegistry;
@@ -161,14 +161,12 @@ export class DAGWorkflowEngine {
       );
       
       await Promise.all(
-        tasksToExecute.map(async (taskName) => {
-          this.executingTasks.add(taskName);
+        tasksToExecute.map(async (task) => {
+          this.executingTasks.add(task);
           try {
-            const task = this.taskRegistry.getTask(taskName) as DAGTask;
-            if (!task) throw new Error(`Task "${taskName}" not found`);
-            
+           
             await this.executor.execute(task);
-            this.completedTasks.add(taskName);
+            this.completedTasks.add(task);
 
             if (task.branches) {
               let branchTaken = false;
@@ -188,7 +186,7 @@ export class DAGWorkflowEngine {
               }
             }
           } finally {
-            this.executingTasks.delete(taskName);
+            this.executingTasks.delete(task);
           }
         })
       );
@@ -196,11 +194,11 @@ export class DAGWorkflowEngine {
     console.log("Workflow completed.");
   }
 
-  private addOtherBranchesToSkip(task: DAGTask, selectedPath: string | string[]) {
+  private addOtherBranchesToSkip(task: DAGTask, selectedPath: DAGTask | DAGTask[]) {
     const selectedTasks = new Set(Array.isArray(selectedPath) ? selectedPath : [selectedPath]);
     
     // 收集所有可能的分支路径
-    const allPossibleTasks = new Set<string>();
+    const allPossibleTasks = new Set<DAGTask>();
     
     // 添加所有条件分支的目标任务
     task.branches?.forEach(branch => {
@@ -224,31 +222,29 @@ export class DAGWorkflowEngine {
     });
   }
 
-  private async executeNext(next: string | string[]): Promise<void> {
+  private async executeNext(next: DAGTask | DAGTask[]): Promise<void> {
     if (Array.isArray(next)) {
-      await Promise.all(next.map(taskName => this.runTask(taskName)));
+      await Promise.all(next.map(task => this.runTask(task)));
     } else {
       await this.runTask(next);
     }
   }
 
-  private async runTask(taskName: string): Promise<void> {
-    if (this.skipTasks.has(taskName) || this.completedTasks.has(taskName)) {
-      console.log(`Skipping task ${taskName} as it's either in an unused branch or already completed`);
+  private async runTask(task: DAGTask): Promise<void> {
+    if (this.skipTasks.has(task) || this.completedTasks.has(task)) {
+      console.log(`Skipping task ${task} as it's either in an unused branch or already completed`);
       return;
     }
-    const task = this.taskRegistry.getTask(taskName);
-    if (!task) throw new Error(`Task "${taskName}" not found`);
     await this.executor.execute(task);
-    this.completedTasks.add(taskName);
+    this.completedTasks.add(task);
   }
 
-  private async updateTaskStatus(taskName: string, status: TaskStatus) {
-    this.taskStatus.set(taskName, status);
+  private async updateTaskStatus(task: DAGTask, status: TaskStatus) {
+    this.taskStatus.set(task, status);
     // 可以添加状态变更的回调或事件发射
   }
 
-  getTaskStatus(taskName: string): TaskStatus {
-    return this.taskStatus.get(taskName) || 'pending';
+  getTaskStatus(task: DAGTask): TaskStatus {
+    return this.taskStatus.get(task) || 'pending';
   }
 }
