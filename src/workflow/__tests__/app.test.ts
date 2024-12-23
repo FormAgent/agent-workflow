@@ -4,7 +4,7 @@ import { TaskExecutor } from "../TaskExecutor";
 import { TaskRegistry } from "../TaskRegistry";
 import { WorkflowEngine } from "../Workflow";
 
-describe('AIAgent', () => {
+describe('顺序任务', () => {
   const registry = new TaskRegistry();
   const context = new ContextManager();
   const executor = new TaskExecutor(context);
@@ -19,7 +19,7 @@ describe('AIAgent', () => {
   beforeEach(() => {
   });
 
-  test('should handle input and return formatted output', async () => {
+  test('可以识别的天气查询', async () => {
 
     // 设置初始上下文
     context.set("rawData", "   What's the weather today?   ");
@@ -33,7 +33,7 @@ describe('AIAgent', () => {
     expect(response.intent).toBe('weather_query');
   });
 
-  test('should add and process tasks correctly', async () => {
+  test('无法识别的股市查询', async () => {
     // 设置初始上下文
     context.set("rawData", "   How about the stock market today?   ");
   

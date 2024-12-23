@@ -8,10 +8,10 @@ const execute = async (input: TaskInput): Promise<TaskOutput> => {
   return {};
 };
 
-describe('AIAgent', () => {
+describe('一般的DAG任务调度', () => {
   beforeEach(() => {});
 
-  test('dag1', async () => {
+  test('三层任务依赖，在2级有两个任务可以并行', async () => {
     const dag1: DAG = {
       tasks: [
         { name: 'TaskA', execute },
@@ -31,7 +31,7 @@ describe('AIAgent', () => {
     expect(resposne[2].tasks).toEqual(['TaskC']);
   });
 
-  test('dag2', async () => {
+  test('三层任务依赖，任务D同时依赖任务B和任务C', async () => {
     const dag2: DAG = {
       tasks: [
         { name: "TaskA", execute },
@@ -51,7 +51,7 @@ describe('AIAgent', () => {
     expect(resposne[2].tasks).toEqual(['TaskD']);
   });
 
-  test('dag3', async () => {
+  test('无依赖任务', async () => {
     const dag3: DAG = {
       tasks: [
         { name: "TaskA", execute },
@@ -66,7 +66,7 @@ describe('AIAgent', () => {
     expect(resposne[0].tasks).toEqual(['TaskA','TaskB','TaskC']);
   });
 
-  test('dag4', async () => {
+  test('循环依赖应该出错', async () => {
     const dag4: DAG = {
       tasks: [
         { name: "TaskA", dependsOn: ["TaskC"], execute },

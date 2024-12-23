@@ -137,7 +137,8 @@ export class DAGWorkflowEngine {
   private executor: TaskExecutor;
   private executingTasks: Set<string> = new Set();
   private taskStatus: Map<string, TaskStatus> = new Map();
-  private skipTasks: Set<string> = new Set(); // 新增：用于记录需要跳过的任务
+  private skipTasks: Set<string> = new Set();
+  private completedTasks: Set<string> = new Set();
 
   constructor(taskRegistry: TaskRegistry, executor: TaskExecutor) {
     this.taskRegistry = taskRegistry;
@@ -146,14 +147,17 @@ export class DAGWorkflowEngine {
 
   async run(dag: DAG): Promise<void> {
     const levels = DAGParser.getExecutionOrderWithLevels(dag);
-    this.skipTasks.clear(); // 清空跳过任务集合
+    this.skipTasks.clear();
+    this.completedTasks.clear();
 
     for (const { level, tasks } of levels) {
       console.log(`Executing tasks at level ${level}:`, tasks);
 
-      // 过滤掉已执行和需要跳过的任务
+      // 过滤掉已执行、已完成和需要跳过的任务
       const tasksToExecute = tasks.filter(
-        task => !this.executingTasks.has(task) && !this.skipTasks.has(task)
+        task => !this.executingTasks.has(task) && 
+                !this.skipTasks.has(task) && 
+                !this.completedTasks.has(task)
       );
       
       await Promise.all(
@@ -164,13 +168,13 @@ export class DAGWorkflowEngine {
             if (!task) throw new Error(`Task "${taskName}" not found`);
             
             await this.executor.execute(task);
+            this.completedTasks.add(taskName);
 
             if (task.branches) {
               let branchTaken = false;
               for (const branch of task.branches) {
                 if (branch.condition(this.executor.getContext())) {
                   console.log(`Condition met for branch, executing next tasks:`, branch.next);
-                  // 将未选中的分支添加到跳过列表
                   this.addOtherBranchesToSkip(task, branch.next);
                   await this.executeNext(branch.next);
                   branchTaken = true;
@@ -229,13 +233,14 @@ export class DAGWorkflowEngine {
   }
 
   private async runTask(taskName: string): Promise<void> {
-    if (this.skipTasks.has(taskName)) {
-      console.log(`Skipping task ${taskName} as it's in an unused branch`);
+    if (this.skipTasks.has(taskName) || this.completedTasks.has(taskName)) {
+      console.log(`Skipping task ${taskName} as it's either in an unused branch or already completed`);
       return;
     }
     const task = this.taskRegistry.getTask(taskName);
     if (!task) throw new Error(`Task "${taskName}" not found`);
     await this.executor.execute(task);
+    this.completedTasks.add(taskName);
   }
 
   private async updateTaskStatus(taskName: string, status: TaskStatus) {
