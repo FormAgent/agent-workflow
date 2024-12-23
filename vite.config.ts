@@ -6,16 +6,16 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'WorkflowEngine',
-      fileName: 'workflow-engine',
-      formats: ['es', 'umd']
+      name: 'DagWorkflow',
+      fileName: 'dag-workflow',
+      formats: ['es', 'umd'],
     },
     sourcemap: true,
     minify: 'terser',
     rollupOptions: {
       treeshake: {
-        moduleSideEffects: false
-      }
+        moduleSideEffects: false,
+      },
     },
     terserOptions: {
       compress: {
@@ -27,23 +27,23 @@ export default defineConfig({
           'console.debug',
           'console.warn',
           'console.error',
-          'console.trace'
+          'console.trace',
         ],
-        passes: 2
+        passes: 2,
       },
       mangle: true,
       format: {
         comments: false,
-        max_line_len: 120
-      }
-    }
+        max_line_len: 120,
+      },
+    },
   },
   plugins: [
     dts({
       insertTypesEntry: true,
-    })
+    }),
   ],
   esbuild: {
-    drop: ['console', 'debugger']
-  }
-}); 
+    drop: ['console', 'debugger'],
+  },
+});
