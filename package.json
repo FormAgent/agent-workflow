@@ -5,8 +5,9 @@
 	"main": "src/app.ts",
 	"scripts": {
 		"build": "tsc",
-		"dev": "ts-node src/workflow/__tests__/dag.ts",
-		"start": "node dist/app.js"
+		"dev": "ts-node src/workflow/__tests__/cond.ts",
+		"start": "node dist/app.js",
+		"test": "jest"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

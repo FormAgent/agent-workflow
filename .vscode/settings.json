@@ -1,0 +1,4 @@
+{
+  "jestrunner.changeDirectoryToWorkspaceRoot": false,
+  "jest.rootPath": "${workspaceFolder}"
+}

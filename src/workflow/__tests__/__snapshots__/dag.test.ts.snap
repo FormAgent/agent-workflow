@@ -1,7 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`AIAgent dag4: Cyclic dependency detected in the task graph 1`] = `"Cyclic dependency detected in the task graph"`;
-
-exports[`AIAgent dag4: a Cyclic dependency detected in the task graph 1`] = `"Cyclic dependency detected in the task graph"`;
-
-exports[`AIAgent dag4: aCyclic dependency detected in the task graph 1`] = `"Cyclic dependency detected in the task graph"`;
