@@ -2,7 +2,7 @@
 // 动态注册和管理任务
 // 任务接口
 // 每个任务遵循统一的接口，支持动态扩展和热插拔。
-import { z, ZodSchema } from 'zod';
+import { type ZodSchema, z } from "zod";
 
 export interface TaskInput {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>

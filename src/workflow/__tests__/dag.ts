@@ -1,8 +1,8 @@
-import { ContextManager } from '../ContextManager';
-import { DAGParser, type DAG, DAGWorkflowEngine } from '../DAG';
-import type { TaskInput, TaskOutput } from '../Task';
-import { TaskExecutor } from '../TaskExecutor';
-import { TaskA, TaskB, TaskC, TaskD } from './dagTasks';
+import { ContextManager } from "../ContextManager";
+import { type DAG, DAGParser, DAGWorkflowEngine } from "../DAG";
+import type { TaskInput, TaskOutput } from "../Task";
+import { TaskExecutor } from "../TaskExecutor";
+import { TaskA, TaskB, TaskC, TaskD } from "./dagTasks";
 
 const execute = async (input: TaskInput): Promise<TaskOutput> => {
   return {};

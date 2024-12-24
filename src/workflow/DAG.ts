@@ -1,8 +1,8 @@
-import EventEmitter from 'eventemitter3';
-import type { ContextManager } from './ContextManager';
-import type { Task } from './Task';
-import type { TaskExecutor } from './TaskExecutor';
-import { z, ZodSchema } from 'zod';
+import EventEmitter from "eventemitter3";
+import { ZodSchema, z } from "zod";
+import type { ContextManager } from "./ContextManager";
+import type { Task } from "./Task";
+import type { TaskExecutor } from "./TaskExecutor";
 
 export interface DAGTask extends Task {
   dependsOn?: DAGTask[]; // 前置任务
@@ -22,7 +22,7 @@ export interface DAG {
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DAGParser {
   static getExecutionOrderWithLevels(
-    dag: DAG
+    dag: DAG,
   ): { level: number; tasks: DAGTask[] }[] {
     const graph = new Map<DAGTask, DAGTask[]>(); // 邻接表：任务图
     const inDegree = new Map<DAGTask, number>(); // 入度表：记录任务的依赖数量
@@ -97,7 +97,7 @@ export class DAGParser {
     while (queue.length > 0) {
       const taskName = queue.shift();
       if (!taskName) {
-        throw new Error('Unexpected empty queue');
+        throw new Error("Unexpected empty queue");
       }
       const currentLevel = levels.get(taskName);
       if (currentLevel === undefined) {
@@ -124,7 +124,7 @@ export class DAGParser {
 
     // 检查循环依赖
     if (levels.size !== dag.tasks.length) {
-      throw new Error('Cyclic dependency detected in the task graph');
+      throw new Error("Cyclic dependency detected in the task graph");
     }
 
     // 不再反转结果，保持从低层级到高层级的顺序
@@ -132,7 +132,7 @@ export class DAGParser {
   }
 }
 
-export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type TaskStatus = "pending" | "running" | "completed" | "failed";
 
 export class DAGWorkflowEngine extends EventEmitter {
   private executor: TaskExecutor;
@@ -159,7 +159,7 @@ export class DAGWorkflowEngine extends EventEmitter {
         (task) =>
           !this.executingTasks.has(task) &&
           !this.skipTasks.has(task) &&
-          !this.completedTasks.has(task)
+          !this.completedTasks.has(task),
       );
 
       await Promise.all(
@@ -174,8 +174,8 @@ export class DAGWorkflowEngine extends EventEmitter {
               for (const branch of task.branches) {
                 if (branch.condition(this.executor.getContext())) {
                   console.debug(
-                    'Condition met for branch, executing next tasks:',
-                    branch.next
+                    "Condition met for branch, executing next tasks:",
+                    branch.next,
                   );
                   this.addOtherBranchesToSkip(task, branch.next);
                   await this.executeNext(branch.next);
@@ -185,8 +185,8 @@ export class DAGWorkflowEngine extends EventEmitter {
               }
               if (!branchTaken && task.defaultNext) {
                 console.debug(
-                  'No conditions met, executing default tasks:',
-                  task.defaultNext
+                  "No conditions met, executing default tasks:",
+                  task.defaultNext,
                 );
                 this.addOtherBranchesToSkip(task, task.defaultNext);
                 await this.executeNext(task.defaultNext);
@@ -195,18 +195,18 @@ export class DAGWorkflowEngine extends EventEmitter {
           } finally {
             this.executingTasks.delete(task);
           }
-        })
+        }),
       );
     }
-    console.info('Workflow completed.');
+    console.info("Workflow completed.");
   }
 
   private addOtherBranchesToSkip(
     task: DAGTask,
-    selectedPath: DAGTask | DAGTask[]
+    selectedPath: DAGTask | DAGTask[],
   ) {
     const selectedTasks = new Set(
-      Array.isArray(selectedPath) ? selectedPath : [selectedPath]
+      Array.isArray(selectedPath) ? selectedPath : [selectedPath],
     );
 
     // 收集所有可能的分支路径
@@ -252,7 +252,7 @@ export class DAGWorkflowEngine extends EventEmitter {
     // 检查是否应该跳过任务
     if (this.skipTasks.has(task) || this.completedTasks.has(task)) {
       console.debug(
-        `Skipping task ${task.name} as it's either in an unused branch or already completed`
+        `Skipping task ${task.name} as it's either in an unused branch or already completed`,
       );
       return;
     }
@@ -260,21 +260,21 @@ export class DAGWorkflowEngine extends EventEmitter {
     // 检查依赖任务是否都已完成
     if (task.dependsOn?.length) {
       const allDependenciesCompleted = task.dependsOn.every(
-        (dep) => this.completedTasks.has(dep) && !this.skipTasks.has(dep)
+        (dep) => this.completedTasks.has(dep) && !this.skipTasks.has(dep),
       );
 
       // 如果有依赖任务被跳过，那么这个任务也应该被跳过
       if (!allDependenciesCompleted) {
         this.skipTasks.add(task);
         console.debug(
-          `Skipping task ${task.name} as some of its dependencies were skipped or not completed`
+          `Skipping task ${task.name} as some of its dependencies were skipped or not completed`,
         );
         return;
       }
     }
 
     // Update status to 'running'
-    await this.updateTaskStatus(task, 'running');
+    await this.updateTaskStatus(task, "running");
 
     let attempts = 0;
     const maxAttempts = task.retryCount ?? 1;
@@ -286,7 +286,7 @@ export class DAGWorkflowEngine extends EventEmitter {
 
         // Mark as completed and update status only after successful execution
         this.completedTasks.add(task);
-        await this.updateTaskStatus(task, 'completed');
+        await this.updateTaskStatus(task, "completed");
         return;
       } catch (error) {
         lastError = error as Error;
@@ -301,13 +301,13 @@ export class DAGWorkflowEngine extends EventEmitter {
         if (attempts < maxAttempts) {
           console.debug(
             `Task execution failed (attempt ${attempts}/${maxAttempts}), retrying...`,
-            lastError
+            lastError,
           );
           continue;
         }
 
         // On final attempt, mark as failed and throw
-        await this.updateTaskStatus(task, 'failed');
+        await this.updateTaskStatus(task, "failed");
         throw lastError;
       }
     }
@@ -315,10 +315,10 @@ export class DAGWorkflowEngine extends EventEmitter {
 
   private async updateTaskStatus(task: DAGTask, status: TaskStatus) {
     this.taskStatus.set(task, status);
-    this.emit('taskStatusChanged', task, status);
+    this.emit("taskStatusChanged", task, status);
   }
 
   getTaskStatus(task: DAGTask): TaskStatus {
-    return this.taskStatus.get(task) || 'pending';
+    return this.taskStatus.get(task) || "pending";
   }
 }

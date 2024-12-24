@@ -1,14 +1,14 @@
-import { ContextManager } from '../ContextManager';
-import { WorkflowEngine } from '../Workflow';
-import { TaskExecutor } from '../TaskExecutor';
+import { z } from "zod";
+import { ContextManager } from "../ContextManager";
+import { TaskExecutor } from "../TaskExecutor";
+import { WorkflowEngine } from "../Workflow";
 import {
   DataCleanTask,
   WeatherOutputSchema,
   workflowDefinition,
-} from './tasks';
-import { z } from 'zod';
+} from "./tasks";
 
-describe('Task Schema Validation', () => {
+describe("Task Schema Validation", () => {
   let context: ContextManager;
   let executor: TaskExecutor;
   let engine: WorkflowEngine;
@@ -19,41 +19,41 @@ describe('Task Schema Validation', () => {
     engine = new WorkflowEngine(executor);
   });
 
-  it('should validate input/output for DataCleanTask', async () => {
+  it("should validate input/output for DataCleanTask", async () => {
     const task = new DataCleanTask();
-    const input = { rawData: '  hello   world  ' };
+    const input = { rawData: "  hello   world  " };
     const output = await task.execute(input);
 
-    expect(output.cleanedData).toBe('hello world');
+    expect(output.cleanedData).toBe("hello world");
   });
 
-  it('should validate input/output for weather workflow', async () => {
-    context.set('rawData', 'what is the weather today');
+  it("should validate input/output for weather workflow", async () => {
+    context.set("rawData", "what is the weather today");
     await engine.run(workflowDefinition);
 
-    const weatherInfo = context.get('weatherInfo');
+    const weatherInfo = context.get("weatherInfo");
     expect(
-      WeatherOutputSchema.shape.weatherInfo.parse(weatherInfo)
+      WeatherOutputSchema.shape.weatherInfo.parse(weatherInfo),
     ).toBeDefined();
   });
 
-  it('should throw on invalid input', async () => {
+  it("should throw on invalid input", async () => {
     const task = new DataCleanTask();
-    const invalidInput = { wrongField: 'test' };
+    const invalidInput = { wrongField: "test" };
 
     await expect(task.execute(invalidInput)).rejects.toThrow();
   });
 
-  it('should validate full workflow with schemas', async () => {
-    context.set('rawData', 'what is the weather today');
+  it("should validate full workflow with schemas", async () => {
+    context.set("rawData", "what is the weather today");
     await engine.run(workflowDefinition);
 
     // Validate final state
     const finalState = {
-      rawData: context.get('rawData'),
-      cleanedData: context.get('cleanedData'),
-      intent: context.get('intent'),
-      weatherInfo: context.get('weatherInfo'),
+      rawData: context.get("rawData"),
+      cleanedData: context.get("cleanedData"),
+      intent: context.get("intent"),
+      weatherInfo: context.get("weatherInfo"),
     };
 
     const FinalStateSchema = z.object({
