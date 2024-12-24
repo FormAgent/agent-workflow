@@ -103,6 +103,9 @@ class ContextManager {
 ```typescript
 interface Task {
   name: string;
+  // 可选的输入输出模式验证
+  inputSchema?: ZodSchema;
+  outputSchema?: ZodSchema;
   execute(input: TaskInput): Promise<TaskOutput>;
 }
 ```
@@ -167,6 +170,51 @@ type TaskOutput = Record<string, any>;
 ```typescript
 type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 ```
+
+### Schema 验证
+任务可以使用 Zod 来定义可选的输入和输出模式：
+
+```typescript
+import { z } from 'zod';
+
+class WeatherTask implements DAGTask {
+  name = 'WeatherTask';
+  
+  // 定义输入模式
+  inputSchema = z.object({
+    rawData: z.string(),
+    cleanedData: z.string().optional(),
+    intent: z.string().optional(),
+  });
+
+  // 定义输出模式
+  outputSchema = z.object({
+    weatherInfo: z.object({
+      temperature: z.string(),
+      condition: z.string(),
+    }),
+  });
+
+  async execute(input: TaskInput) {
+    // 输入验证
+    const validatedInput = this.inputSchema.parse(input);
+    
+    // 任务逻辑
+    const output = {
+      ...input,
+      weatherInfo: { temperature: '25°C', condition: '晴天' },
+    };
+
+    // 输出验证
+    return this.outputSchema.parse(output);
+  }
+}
+```
+
+Schema 验证确保：
+- 在任务执行前验证输入数据符合预期格式
+- 输出数据符合指定的结构
+- 运行时类型安全和自动错误处理
 
 ## 使用示例
 

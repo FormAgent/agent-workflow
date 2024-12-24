@@ -16,6 +16,7 @@
   - [Types](#types)
     - [TaskInput/TaskOutput](#taskinputtaskoutput)
     - [TaskStatus](#taskstatus)
+    - [Schema Validation](#schema-validation)
   - [Usage Examples](#usage-examples)
     - [DAG Workflow Example](#dag-workflow-example)
     - [Conditional Branch Example](#conditional-branch-example)
@@ -103,6 +104,9 @@ Base task interface.
 ```typescript
 interface Task {
   name: string;
+  // Optional input/output schema validation
+  inputSchema?: ZodSchema;
+  outputSchema?: ZodSchema;
   execute(input: TaskInput): Promise<TaskOutput>;
 }
 ```
@@ -167,6 +171,51 @@ Task status enumeration.
 ```typescript
 type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 ```
+
+### Schema Validation
+Tasks can optionally define input and output schemas using Zod:
+
+```typescript
+import { z } from 'zod';
+
+class WeatherTask implements DAGTask {
+  name = 'WeatherTask';
+  
+  // Define input schema
+  inputSchema = z.object({
+    rawData: z.string(),
+    cleanedData: z.string().optional(),
+    intent: z.string().optional(),
+  });
+
+  // Define output schema
+  outputSchema = z.object({
+    weatherInfo: z.object({
+      temperature: z.string(),
+      condition: z.string(),
+    }),
+  });
+
+  async execute(input: TaskInput) {
+    // Input validation
+    const validatedInput = this.inputSchema.parse(input);
+    
+    // Task logic
+    const output = {
+      ...input,
+      weatherInfo: { temperature: '25°C', condition: 'Sunny' },
+    };
+
+    // Output validation
+    return this.outputSchema.parse(output);
+  }
+}
+```
+
+Schema validation ensures:
+- Input data meets the expected format before task execution
+- Output data conforms to the specified structure
+- Runtime type safety and automatic error handling
 
 ## Usage Examples
 

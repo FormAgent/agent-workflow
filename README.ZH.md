@@ -1,6 +1,8 @@
-# Workflow Engine
+# DAG 工作流引擎
 
-一个强大的工作流引擎，支持 DAG（有向无环图）任务调度、条件分支、并行执行和上下文管理。
+一个强大的工作流引擎，支持 DAG（有向无环图）任务调度，具有条件分支、并行执行和上下文管理功能。
+
+[English](./README.md)
 
 ## 特性
 
@@ -37,121 +39,157 @@ pnpm add dag-workflow
 
 ## 快速开始
 
-### 基础用法
+### 基础示例：天气查询工作流
 
 ```typescript
 import { 
   DAGWorkflowEngine, 
   TaskExecutor, 
   ContextManager,
-  type Task,
+  type DAGTask,
   type TaskInput 
 } from 'dag-workflow';
 
-// 定义任务
-class MyTask implements Task {
-  name = 'MyTask';
+// 1. 定义任务
+class DataCleanTask implements DAGTask {
+  name = 'DataCleanTask';
   async execute(input: TaskInput) {
-    // 任务逻辑
-    if (!someCondition) throw new Error('Task failed');
-    return { result: 'done' };
+    const rawData = input.rawData;
+    const cleanedData = rawData.trim().replace(/\s+/g, ' ').toLowerCase();
+    return { ...input, cleanedData };
   }
 }
 
-// 创建工作流
+class IntentRecognitionTask implements DAGTask {
+  name = 'IntentRecognitionTask';
+  async execute(input: TaskInput) {
+    const cleanedData = input.cleanedData.toLowerCase();
+    const intent = cleanedData.includes('weather')
+      ? 'weather_query'
+      : 'unknown';
+    return { ...input, intent };
+  }
+}
+
+class WeatherTask implements DAGTask {
+  name = 'WeatherTask';
+  async execute(input: TaskInput) {
+    return {
+      ...input,
+      weatherInfo: { temperature: '25°C', condition: '晴天' },
+    };
+  }
+}
+
+class DefaultTask implements DAGTask {
+  name = 'DefaultTask';
+  async execute(input: TaskInput) {
+    return {
+      ...input,
+      defaultResponse: '抱歉，我不理解您的请求。',
+    };
+  }
+}
+
+// 2. 创建工作流
+const workflowDefinition = {
+  tasks: [
+    new DataCleanTask(),
+    new IntentRecognitionTask(),
+    {
+      branches: [
+        {
+          condition: (context) => context.get('intent') === 'weather_query',
+          next: new WeatherTask(),
+        },
+      ],
+      default: new DefaultTask(),
+    },
+  ],
+};
+
+// 3. 运行工作流
 const context = new ContextManager();
 const executor = new TaskExecutor(context);
 const engine = new DAGWorkflowEngine(executor);
 
-// 运行任务
+// 监听任务状态变化
 engine.on('taskStatusChanged', (task, status) => {
-  console.log(`Task ${task.name} status changed to ${status}`);
+  console.log(`任务 ${task.name} 状态: ${status}`);
 });
 
-const task = new MyTask();
-await engine.run({ tasks: [task] });
+// 设置初始数据并运行
+context.set('rawData', '今天天气怎么样');
+await engine.run(workflowDefinition);
+
+// 获取结果
+console.log(context.get('weatherInfo')); // { temperature: '25°C', condition: '晴天' }
 ```
 
-### 条件分支示例
+### 复杂示例：多层条件任务
 
 ```typescript
 import type { DAGTask, ContextManager } from 'dag-workflow';
 
-class ConditionalTask implements DAGTask {
-  name = 'ConditionalTask';
-  branches = [{
-    condition: (ctx: ContextManager) => ctx.get('value') > 5,
-    retryCount: 3,
-    next: new TaskB()
-  }];
-  defaultNext = new TaskC();
+// 定义不同处理路径的任务
+class TaskA implements DAGTask {
+  name = 'TaskA';
+  async execute(input: TaskInput) {
+    // 初始处理
+    return { ...input, valueA: '已处理' };
+  }
 }
-```
 
-## 架构设计
+class TaskB implements DAGTask {
+  name = 'TaskB';
+  dependsOn = [taskA]; // 依赖于 TaskA
+  async execute(input: TaskInput) {
+    // 处理路径 B
+    return { ...input, valueB: '已处理' };
+  }
+}
 
-### 核心模块
+class TaskC implements DAGTask {
+  name = 'TaskC';
+  dependsOn = [taskA]; // 依赖于 TaskA
+  async execute(input: TaskInput) {
+    // 处理路径 C
+    return { ...input, valueC: '已处理' };
+  }
+}
 
-1. **DAG 解析器** (DAGParser)
-   - 任务依赖分析
-   - 执行顺序确定
-   - 循环依赖检测
+// 创建条件任务
+const conditionalTask = {
+  name: 'ConditionalTask',
+  dependsOn: [taskA],
+  branches: [
+    {
+      condition: (ctx: ContextManager) => ctx.get('value') > 5,
+      next: taskB,
+    },
+    {
+      condition: (ctx: ContextManager) => ctx.get('value') <= 5,
+      next: taskC,
+    },
+  ],
+};
 
-2. **工作流引擎** (WorkflowEngine)
-   - 任务调度
-   - 分支处理
-   - 状态管理
+// 创建 DAG
+const dag = {
+  tasks: [taskA, conditionalTask, taskB, taskC],
+};
 
-3. **上下文管理器** (ContextManager)
-   - 数据存储
-   - 状态共享
-   - 上下文隔离
-
-4. **任务执行器** (TaskExecutor)
-   - 任务生命周期管理
-   - 错误处理
-   - 重试机制
-
-### 工作流程
-
-```mermaid
-graph TD
-    A[输入任务] --> B[DAG解析]
-    B --> C[依赖分析]
-    C --> D[任务排序]
-    D --> E[并行执行]
-    E --> F[条件判断]
-    F --> G[任务执行]
-    G --> H[状态更新]
+// 运行工作流
+const context = new ContextManager();
+context.set('value', 10); // 这将触发 taskB 路径
+const executor = new TaskExecutor(context);
+const engine = new DAGWorkflowEngine(executor);
+await engine.run(dag);
 ```
 
 ## API 文档
 
-### DAGTask 接口
-
-```typescript
-interface DAGTask extends Task {
-  dependsOn?: DAGTask[];
-  branches?: {
-    condition: (context: ContextManager) => boolean;
-    next: DAGTask | DAGTask[];
-  }[];
-  defaultNext?: DAGTask | DAGTask[];
-}
-```
-
-### ContextManager 类
-
-```typescript
-class ContextManager {
-  set(key: string, value: any): void;
-  get(key: string): any;
-  getAll(): Record<string, any>;
-  clear(): void;
-}
-```
-
-更多 API 文档请参考 [API 文档](./docs/api.zh.md)
+详细的 API 文档请参考 [API 文档](./docs/api.md)
 
 ## 测试
 

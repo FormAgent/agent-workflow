@@ -1,8 +1,8 @@
-# Workflow Engine
+# DAG Workflow Engine
 
-A powerful workflow engine that supports DAG (Directed Acyclic Graph) task scheduling, conditional branching, parallel execution, and context management.
+A powerful workflow engine that supports DAG (Directed Acyclic Graph) task scheduling with conditional branching, parallel execution, and context management.
 
-[中文文档](./README.ZH.md)
+[中文文档](./README.zh.md)
 
 ## Features
 
@@ -39,122 +39,157 @@ pnpm add dag-workflow
 
 ## Quick Start
 
-### Basic Usage
+### Basic Example: Weather Query Workflow
 
 ```typescript
 import { 
   DAGWorkflowEngine, 
   TaskExecutor, 
   ContextManager,
-  type Task,
+  type DAGTask,
   type TaskInput 
 } from 'dag-workflow';
 
-// Define a task
-class MyTask implements Task {
-  name = 'MyTask';
+// 1. Define Tasks
+class DataCleanTask implements DAGTask {
+  name = 'DataCleanTask';
   async execute(input: TaskInput) {
-    // Task logic
-    if (!someCondition) throw new Error('Task failed');
-    return { result: 'done' };
+    const rawData = input.rawData;
+    const cleanedData = rawData.trim().replace(/\s+/g, ' ').toLowerCase();
+    return { ...input, cleanedData };
   }
 }
 
-// Create workflow
+class IntentRecognitionTask implements DAGTask {
+  name = 'IntentRecognitionTask';
+  async execute(input: TaskInput) {
+    const cleanedData = input.cleanedData.toLowerCase();
+    const intent = cleanedData.includes('weather')
+      ? 'weather_query'
+      : 'unknown';
+    return { ...input, intent };
+  }
+}
+
+class WeatherTask implements DAGTask {
+  name = 'WeatherTask';
+  async execute(input: TaskInput) {
+    return {
+      ...input,
+      weatherInfo: { temperature: '25°C', condition: 'Sunny' },
+    };
+  }
+}
+
+class DefaultTask implements DAGTask {
+  name = 'DefaultTask';
+  async execute(input: TaskInput) {
+    return {
+      ...input,
+      defaultResponse: "I'm sorry, I don't understand your request.",
+    };
+  }
+}
+
+// 2. Create Workflow
+const workflowDefinition = {
+  tasks: [
+    new DataCleanTask(),
+    new IntentRecognitionTask(),
+    {
+      branches: [
+        {
+          condition: (context) => context.get('intent') === 'weather_query',
+          next: new WeatherTask(),
+        },
+      ],
+      default: new DefaultTask(),
+    },
+  ],
+};
+
+// 3. Run Workflow
 const context = new ContextManager();
 const executor = new TaskExecutor(context);
 const engine = new DAGWorkflowEngine(executor);
 
 // Listen to task status changes
 engine.on('taskStatusChanged', (task, status) => {
-  console.log(`Task ${task.name} status changed to ${status}`);
+  console.log(`Task ${task.name} status: ${status}`);
 });
 
-// Run task
-const task = new MyTask();
-await engine.run({ tasks: [task] });
+// Set initial data and run
+context.set('rawData', 'what is the weather today');
+await engine.run(workflowDefinition);
+
+// Get result
+console.log(context.get('weatherInfo')); // { temperature: '25°C', condition: 'Sunny' }
 ```
 
-### Conditional Branch Example
+### Complex Example: Multi-Level Conditional Tasks
 
 ```typescript
 import type { DAGTask, ContextManager } from 'dag-workflow';
 
-class ConditionalTask implements DAGTask {
-  name = 'ConditionalTask';
-  branches = [{
-    condition: (ctx: ContextManager) => ctx.get('value') > 5,
-    retryCount: 3,
-    next: new TaskB()
-  }];
-  defaultNext = new TaskC();
+// Define tasks for different processing paths
+class TaskA implements DAGTask {
+  name = 'TaskA';
+  async execute(input: TaskInput) {
+    // Initial processing
+    return { ...input, valueA: 'processed' };
+  }
 }
-```
 
-## Architecture
+class TaskB implements DAGTask {
+  name = 'TaskB';
+  dependsOn = [taskA]; // Depends on TaskA
+  async execute(input: TaskInput) {
+    // Process path B
+    return { ...input, valueB: 'processed' };
+  }
+}
 
-### Core Modules
+class TaskC implements DAGTask {
+  name = 'TaskC';
+  dependsOn = [taskA]; // Depends on TaskA
+  async execute(input: TaskInput) {
+    // Process path C
+    return { ...input, valueC: 'processed' };
+  }
+}
 
-1. **DAG Parser** (DAGParser)
-   - Task dependency analysis
-   - Execution order determination
-   - Cycle detection
+// Create conditional task
+const conditionalTask = {
+  name: 'ConditionalTask',
+  dependsOn: [taskA],
+  branches: [
+    {
+      condition: (ctx: ContextManager) => ctx.get('value') > 5,
+      next: taskB,
+    },
+    {
+      condition: (ctx: ContextManager) => ctx.get('value') <= 5,
+      next: taskC,
+    },
+  ],
+};
 
-2. **Workflow Engine** (WorkflowEngine)
-   - Task scheduling
-   - Branch handling
-   - Status management
+// Create DAG
+const dag = {
+  tasks: [taskA, conditionalTask, taskB, taskC],
+};
 
-3. **Context Manager** (ContextManager)
-   - Data storage
-   - State sharing
-   - Context isolation
-
-4. **Task Executor** (TaskExecutor)
-   - Task lifecycle management
-   - Error handling
-   - Retry mechanism
-
-### Workflow Process
-
-```mermaid
-graph TD
-    A[Input Tasks] --> B[DAG Parsing]
-    B --> C[Dependency Analysis]
-    C --> D[Task Ordering]
-    D --> E[Parallel Execution]
-    E --> F[Condition Evaluation]
-    F --> G[Task Execution]
-    G --> H[Status Update]
+// Run workflow
+const context = new ContextManager();
+context.set('value', 10); // This will trigger taskB path
+const executor = new TaskExecutor(context);
+const engine = new DAGWorkflowEngine(executor);
+await engine.run(dag);
 ```
 
 ## API Documentation
 
-### DAGTask Interface
-
-```typescript
-interface DAGTask extends Task {
-  dependsOn?: DAGTask[];
-  branches?: {
-    condition: (context: ContextManager) => boolean;
-    next: DAGTask | DAGTask[];
-  }[];
-  defaultNext?: DAGTask | DAGTask[];
-}
-```
-
-### ContextManager Class
-
-```typescript
-class ContextManager {
-  set(key: string, value: any): void;
-  get(key: string): any;
-  getAll(): Record<string, any>;
-  clear(): void;
-}
-```
-
-For more API documentation, please refer to [API Documentation](./docs/api.md)
+For detailed API documentation, please refer to [API Documentation](./docs/api.md)
 
 ## Testing
 

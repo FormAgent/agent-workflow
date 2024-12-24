@@ -1,43 +1,43 @@
-import { ContextManager } from "../ContextManager";
-import { type DAG, DAGParser, type DAGTask, DAGWorkflowEngine } from "../DAG";
-import type { TaskInput, TaskOutput } from "../Task";
-import { TaskExecutor } from "../TaskExecutor";
+import { ContextManager } from '../ContextManager';
+import { type DAG, DAGParser, type DAGTask, DAGWorkflowEngine } from '../DAG';
+import type { TaskInput, TaskOutput } from '../Task';
+import { TaskExecutor } from '../TaskExecutor';
 
 class TaskA implements DAGTask {
-  name = "TaskA";
+  name = 'TaskA';
   async execute(input: TaskInput): Promise<TaskOutput> {
-    console.log("Executing Task A");
+    console.log('Executing Task A');
     return { ...input };
   }
 }
 
 class TaskB implements DAGTask {
-  name = "TaskB";
+  name = 'TaskB';
   dependsOn: DAGTask[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
-    console.log("Executing Task B");
+    console.log('Executing Task B');
     return {};
   }
 }
 
 class TaskC implements DAGTask {
-  name = "TaskC";
+  name = 'TaskC';
   dependsOn: DAGTask[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
-    console.log("Executing Task C");
+    console.log('Executing Task C');
     return {};
   }
 }
 
 class ConditionalTask implements DAGTask {
-  name = "ConditionalTask";
+  name = 'ConditionalTask';
   dependsOn: DAGTask[] = [];
   branches: {
     condition: (ctx: ContextManager) => boolean;
     next: DAGTask | DAGTask[];
   }[] = [];
   async execute(input: TaskInput): Promise<TaskOutput> {
-    console.log("Executing ConditionalTask");
+    console.log('Executing ConditionalTask');
     return {};
   }
 }
@@ -48,8 +48,8 @@ const taskB = new TaskB();
 const taskC = new TaskC();
 
 conditionalTask.branches = [
-  { condition: (ctx: ContextManager) => ctx.get("value") > 5, next: taskB },
-  { condition: (ctx: ContextManager) => ctx.get("value") <= 5, next: taskC },
+  { condition: (ctx: ContextManager) => ctx.get('value') > 5, next: taskB },
+  { condition: (ctx: ContextManager) => ctx.get('value') <= 5, next: taskC },
 ];
 
 conditionalTask.dependsOn = [taskA];
@@ -68,7 +68,7 @@ async function main() {
   console.log(DAGParser.getExecutionOrderWithLevels(dagWithSwitch));
 
   // 设置初始上下文
-  context.set("value", 5); // 改变此值以测试条件
+  context.set('value', 5); // 改变此值以测试条件
 
   // 运行工作流
   await engine.run(dagWithSwitch);
