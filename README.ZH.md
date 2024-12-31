@@ -213,4 +213,4 @@ pnpm build
 
 ## 许可证
 
-MIT © [baryon](https://github.com/baryon)
+MIT © [NoteProtocol](https://github.com/NoteProtocol)

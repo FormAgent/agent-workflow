@@ -1,8 +1,10 @@
 {
   "name": "dag-workflow",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/dag-workflow.umd.cjs",
   "module": "./dist/dag-workflow.js",
   "types": "./dist/index.d.ts",
@@ -31,17 +33,22 @@
     "vite": "^5.1.4",
     "vite-plugin-dts": "^3.7.3"
   },
-  "keywords": ["workflow", "dag", "task", "typescript"],
+  "keywords": [
+    "workflow",
+    "dag",
+    "task",
+    "typescript"
+  ],
   "author": "baryon",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/baryon/dag-workflow.git"
+    "url": "git+https://github.com/NoteProtocol/dag-workflow.git"
   },
   "bugs": {
-    "url": "https://github.com/baryon/dag-workflow/issues"
+    "url": "https://github.com/NoteProtocol/dag-workflow/issues"
   },
-  "homepage": "https://github.com/baryon/dag-workflow#readme",
+  "homepage": "https://github.com/NoteProtocol/dag-workflow#readme",
   "engines": {
     "node": ">=14.0.0"
   },
