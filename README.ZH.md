@@ -31,11 +31,11 @@
 ## 安装
 
 ```bash
-npm install dag-workflow
+npm install agent-workflow
 # 或
-yarn add dag-workflow
+yarn add agent-workflow
 # 或
-pnpm add dag-workflow
+pnpm add agent-workflow
 ```
 
 ## 快速开始
@@ -49,7 +49,7 @@ import {
   ContextManager,
   type DAGTask,
   type TaskInput 
-} from 'dag-workflow';
+} from 'agent-workflow';
 
 // 1. 定义任务
 class DataCleanTask implements DAGTask {
@@ -130,7 +130,7 @@ console.log(context.get('weatherInfo')); // { temperature: '25°C', condition: '
 ### 复杂示例：多层条件任务
 
 ```typescript
-import type { DAGTask, ContextManager } from 'dag-workflow';
+import type { DAGTask, ContextManager } from 'agent-workflow';
 
 // 定义不同处理路径的任务
 class TaskA implements DAGTask {

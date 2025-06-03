@@ -18,20 +18,20 @@
     - [TaskStatus](#taskstatus)
     - [Schema Validation](#schema-validation)
   - [Usage Examples](#usage-examples)
-    - [DAG Workflow Example](#dag-workflow-example)
+    - [Agent Workflow Example](#agent-workflow-example)
     - [Conditional Branch Example](#conditional-branch-example)
     - [Error Handling Example](#error-handling-example)
 
 ## Core Classes
 
 ### DAGWorkflowEngine
-DAG workflow engine for executing DAG-based task flows.
+Agent Workflow engine for executing DAG-based task flows.
 
 ```typescript
 class DAGWorkflowEngine {
   constructor(executor: TaskExecutor);
   
-  // Run DAG workflow
+  // Run Agent Workflow
   async run(dag: DAG): Promise<void>;
   
   // Get task status
@@ -219,10 +219,10 @@ Schema validation ensures:
 
 ## Usage Examples
 
-### DAG Workflow Example
+### Agent Workflow Example
 
 ```typescript
-import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'dag-workflow';
+import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'agent-workflow';
 
 // Define tasks
 class TaskA implements DAGTask {
@@ -259,7 +259,7 @@ await engine.run(dag);
 ### Conditional Branch Example
 
 ```typescript
-import type { DAGTask, ContextManager } from 'dag-workflow';
+import type { DAGTask, ContextManager } from 'agent-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';
@@ -303,8 +303,8 @@ class RetryableTask implements DAGTask {
 You can use the `StreamingTask` to integrate with the [AI SDK](https://github.com/vercel/ai) and stream LLM responses chunk by chunk.
 
 ```typescript
-import { StreamingTask } from 'dag-workflow';
-import type { TaskInput } from 'dag-workflow';
+import { StreamingTask } from 'agent-workflow';
+import type { TaskInput } from 'agent-workflow';
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 

@@ -1,4 +1,4 @@
-# DAG Workflow Engine
+# Agent Workflow Engine
 
 A powerful workflow engine that supports DAG (Directed Acyclic Graph) task scheduling with conditional branching, parallel execution, and context management.
 
@@ -31,11 +31,11 @@ A powerful workflow engine that supports DAG (Directed Acyclic Graph) task sched
 ## Installation
 
 ```bash
-npm install dag-workflow
+npm install agent-workflow
 # or
-yarn add dag-workflow
+yarn add agent-workflow
 # or
-pnpm add dag-workflow
+pnpm add agent-workflow
 ```
 
 ## Quick Start
@@ -49,7 +49,7 @@ import {
   ContextManager,
   type DAGTask,
   type TaskInput 
-} from 'dag-workflow';
+} from 'agent-workflow';
 
 // 1. Define Tasks
 class DataCleanTask implements DAGTask {
@@ -130,7 +130,7 @@ console.log(context.get('weatherInfo')); // { temperature: '25°C', condition: '
 ### Complex Example: Multi-Level Conditional Tasks
 
 ```typescript
-import type { DAGTask, ContextManager } from 'dag-workflow';
+import type { DAGTask, ContextManager } from 'agent-workflow';
 
 // Define tasks for different processing paths
 class TaskA implements DAGTask {

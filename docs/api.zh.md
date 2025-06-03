@@ -221,7 +221,7 @@ Schema 验证确保：
 ### DAG 工作流示例
 
 ```typescript
-import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'dag-workflow';
+import { DAGWorkflowEngine, TaskExecutor, ContextManager, type DAGTask } from 'agent-workflow';
 
 // 定义任务
 class TaskA implements DAGTask {
@@ -258,7 +258,7 @@ await engine.run(dag);
 ### 条件分支示例
 
 ```typescript
-import type { DAGTask, ContextManager } from 'dag-workflow';
+import type { DAGTask, ContextManager } from 'agent-workflow';
 
 class ConditionalTask implements DAGTask {
   name = 'ConditionalTask';
@@ -301,8 +301,8 @@ class RetryableTask implements DAGTask {
 你可以通过 `StreamingTask` 集成 [AI SDK](https://github.com/vercel/ai)，实现大模型响应的流式处理。
 
 ```typescript
-import { StreamingTask } from 'dag-workflow';
-import type { TaskInput } from 'dag-workflow';
+import { StreamingTask } from 'agent-workflow';
+import type { TaskInput } from 'agent-workflow';
 import { streamText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
