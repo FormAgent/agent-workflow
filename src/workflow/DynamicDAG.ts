@@ -15,16 +15,33 @@ export interface TaskPlan {
 
 export interface TaskPlanner {
   plan(input: string, context: ContextManager): Promise<TaskPlan>;
+  addExecutionResult(result: TaskExecutionResult): void;
+  getExecutionHistory(): TaskExecutionResult[];
+}
+
+interface TaskExecutionResult {
+  taskName: string;
+  status: 'completed' | 'failed';
+  output?: any;
+  error?: string;
+}
+
+interface PendingTask {
+  task: DAGTask;
+  dependencies: DAGTask[];
 }
 
 export class DynamicDAGWorkflowEngine extends DAGWorkflowEngine {
   private taskPlanner: TaskPlanner;
   private isPaused: boolean = false;
   private currentPlan: TaskPlan | null = null;
+  private dynamicCompletedTasks: Set<DAGTask> = new Set();
+  private taskResults: Map<string, TaskExecutionResult> = new Map();
 
   constructor(executor: TaskExecutor, taskPlanner: TaskPlanner) {
     super(executor);
     this.taskPlanner = taskPlanner;
+    this.executor.getContext().set('completedTasks', []);
   }
 
   async planAndRun(input: string): Promise<void> {
@@ -119,6 +136,10 @@ export class DynamicDAGWorkflowEngine extends DAGWorkflowEngine {
     return this.currentPlan;
   }
 
+  getTaskResults(): Map<string, TaskExecutionResult> {
+    return new Map(this.taskResults);
+  }
+
   protected async runTask(task: DAGTask): Promise<void> {
     if (this.isPaused) {
       await new Promise<void>((resolve) => {
@@ -129,6 +150,64 @@ export class DynamicDAGWorkflowEngine extends DAGWorkflowEngine {
         this.once('workflowResumed', resumeHandler);
       });
     }
-    await super.runTask(task);
+
+    if (!task.name) {
+      throw new Error('Task name is required');
+    }
+
+    try {
+      await super.runTask(task);
+
+      // 记录任务执行结果
+      const result: TaskExecutionResult = {
+        taskName: task.name,
+        status: 'completed',
+        output: this.executor.getContext().get(task.name),
+      };
+      this.taskResults.set(task.name, result);
+      this.taskPlanner.addExecutionResult(result);
+
+      // 任务完成后，更新已完成任务列表
+      this.dynamicCompletedTasks.add(task);
+      const completedTasks = Array.from(this.dynamicCompletedTasks);
+      this.executor.getContext().set('completedTasks', completedTasks);
+
+      // 检查是否有待处理的任务可以执行
+      await this.processPendingTasks();
+    } catch (error) {
+      // 记录任务失败结果
+      const result: TaskExecutionResult = {
+        taskName: task.name,
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+      };
+      this.taskResults.set(task.name, result);
+      this.taskPlanner.addExecutionResult(result);
+      throw error;
+    }
+  }
+
+  private async processPendingTasks(): Promise<void> {
+    const context = this.executor.getContext();
+    const pendingTasks = (context.get('pendingTasks') || []) as PendingTask[];
+    const completedTasks = context.get('completedTasks') || [];
+
+    // 过滤出可以执行的任务
+    const executableTasks = pendingTasks.filter(({ task, dependencies }) => {
+      return dependencies.every((dep: DAGTask) => completedTasks.includes(dep));
+    });
+
+    // 执行可执行的任务
+    for (const { task, dependencies } of executableTasks) {
+      await this.addTask(task, dependencies);
+    }
+
+    // 更新待处理任务列表
+    const remainingTasks = pendingTasks.filter(({ task, dependencies }) => {
+      return !dependencies.every((dep: DAGTask) =>
+        completedTasks.includes(dep)
+      );
+    });
+    context.set('pendingTasks', remainingTasks);
   }
 }
