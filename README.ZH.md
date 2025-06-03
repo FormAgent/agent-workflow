@@ -11,6 +11,7 @@
   - 自动检测循环依赖
   - 支持多层级任务执行
   - 任务重试机制
+  - ✅ AI SDK 流式支持  可无缝集成 AI SDK，实现 LLM 响应流式处理。
   
 - 🔀 条件分支
   - 动态条件判断
@@ -187,6 +188,13 @@ const engine = new DAGWorkflowEngine(executor);
 await engine.run(dag);
 ```
 
+## AI SDK 流式用法
+
+工作流引擎支持通过 [AI SDK](https://github.com/vercel/ai) 实现大模型响应的流式处理。
+你可以实现一个 StreamingTask 返回 ReadableStream，并像消费普通流一样逐步获取输出。
+
+完整示例见 [API 文档](./docs/api.zh.md#ai-sdk-流式用法)。
+
 ## API 文档
 
 详细的 API 文档请参考 [API 文档](./docs/api.md)
@@ -213,4 +221,4 @@ pnpm build
 
 ## 许可证
 
-MIT © [NoteProtocol](https://github.com/NoteProtocol)
+MIT © [FormAgent](https://github.com/FormAgent)

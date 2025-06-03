@@ -294,4 +294,84 @@ class RetryableTask implements DAGTask {
     return input;
   }
 }
-``` 
+```
+
+### AI SDK 流式用法
+
+你可以通过 `StreamingTask` 集成 [AI SDK](https://github.com/vercel/ai)，实现大模型响应的流式处理。
+
+```typescript
+import { StreamingTask } from 'dag-workflow';
+import type { TaskInput } from 'dag-workflow';
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// 1. 定义一个基于 AI SDK 的 StreamingTask
+class AIStreamTask extends StreamingTask {
+  private messages: { id: string; role: string; content: string }[];
+  private model: string;
+
+  constructor(
+    name: string,
+    messages: { id: string; role: string; content: string }[],
+    model: string = 'gpt-4-turbo'
+  ) {
+    super(name);
+    this.messages = messages;
+    this.model = model;
+  }
+
+  async stream(input: TaskInput): Promise<ReadableStream> {
+    // 使用 AI SDK 获取流式响应
+    const result = streamText({
+      model: openai(this.model),
+      system: 'You are a helpful assistant.',
+      messages: this.messages,
+    });
+    // 转为 ReadableStream
+    const stream = result.toDataStreamResponse();
+    return stream.body as ReadableStream;
+  }
+}
+
+// 2. 执行并消费流
+const task = new AIStreamTask('AITask', [
+  { id: '1', role: 'user', content: 'Say hello' },
+]);
+const result = await task.execute({ context: {} }); // context 可为你的 ContextManager
+
+// 3. 读取流内容
+async function readStream(stream: ReadableStream) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let content = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // AI SDK 数据格式: "0:\"Hello\"\n"
+      const chunk = decoder.decode(value, { stream: true });
+      const match = chunk.match(/^\d+:(.*)\n$/);
+      if (match) {
+        let message = match[1];
+        // 去除引号
+        if (message.startsWith('"') && message.endsWith('"')) {
+          message = message.slice(1, -1);
+        }
+        content += message;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return content;
+}
+
+const content = await readStream(result.stream);
+console.log(content); // 输出: Hello（或完整流式响应）
+```
+
+**要点：**
+- 通过实现 `stream(input)`，`StreamingTask` 可返回文本分块的 `ReadableStream`。
+- 每个分块由 AI SDK 产生并拼接为最终内容。
+- 适合实时处理 LLM 输出，如聊天机器人、助手等。 

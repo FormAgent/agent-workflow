@@ -2,7 +2,7 @@
 
 A powerful workflow engine that supports DAG (Directed Acyclic Graph) task scheduling with conditional branching, parallel execution, and context management.
 
-[中文文档](./README.zh.md)
+[中文文档](./README.ZH.md)
 
 ## Features
 
@@ -11,6 +11,7 @@ A powerful workflow engine that supports DAG (Directed Acyclic Graph) task sched
   - Automatic cycle detection
   - Multi-level task execution
   - Task retry mechanism
+  - ✅ AI SDK Streaming Support  Seamlessly integrates with AI SDK for streaming LLM responses.
   
 - 🔀 Conditional Branching
   - Dynamic condition evaluation
@@ -187,6 +188,13 @@ const engine = new DAGWorkflowEngine(executor);
 await engine.run(dag);
 ```
 
+## Streaming with AI SDK
+
+The workflow engine supports streaming LLM responses using the [AI SDK](https://github.com/vercel/ai).
+You can implement a StreamingTask that returns a ReadableStream, and consume the output as it arrives.
+
+See [API Documentation](./docs/api.md#ai-sdk-streaming-example) for a full example.
+
 ## API Documentation
 
 For detailed API documentation, please refer to [API Documentation](./docs/api.md)
@@ -213,4 +221,4 @@ pnpm build
 
 ## License
 
-MIT © [NoteProtocol](https://github.com/NoteProtocol)
+MIT © [FormAgent](https://github.com/FormAgent)

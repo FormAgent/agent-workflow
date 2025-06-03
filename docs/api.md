@@ -296,4 +296,84 @@ class RetryableTask implements DAGTask {
     return input;
   }
 }
-``` 
+```
+
+### AI SDK Streaming Example
+
+You can use the `StreamingTask` to integrate with the [AI SDK](https://github.com/vercel/ai) and stream LLM responses chunk by chunk.
+
+```typescript
+import { StreamingTask } from 'dag-workflow';
+import type { TaskInput } from 'dag-workflow';
+import { streamText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// 1. Define a StreamingTask that uses AI SDK
+class AIStreamTask extends StreamingTask {
+  private messages: { id: string; role: string; content: string }[];
+  private model: string;
+
+  constructor(
+    name: string,
+    messages: { id: string; role: string; content: string }[],
+    model: string = 'gpt-4-turbo'
+  ) {
+    super(name);
+    this.messages = messages;
+    this.model = model;
+  }
+
+  async stream(input: TaskInput): Promise<ReadableStream> {
+    // Use AI SDK to get a streaming response
+    const result = streamText({
+      model: openai(this.model),
+      system: 'You are a helpful assistant.',
+      messages: this.messages,
+    });
+    // Convert to a ReadableStream
+    const stream = result.toDataStreamResponse();
+    return stream.body as ReadableStream;
+  }
+}
+
+// 2. Execute and consume the stream
+const task = new AIStreamTask('AITask', [
+  { id: '1', role: 'user', content: 'Say hello' },
+]);
+const result = await task.execute({ context: {} }); // context can be your ContextManager
+
+// 3. Read the stream
+async function readStream(stream: ReadableStream) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let content = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      // AI SDK sends data in format: "0:\"Hello\"\n"
+      const chunk = decoder.decode(value, { stream: true });
+      const match = chunk.match(/^\d+:(.*)\n$/);
+      if (match) {
+        let message = match[1];
+        // Remove quotes if present
+        if (message.startsWith('"') && message.endsWith('"')) {
+          message = message.slice(1, -1);
+        }
+        content += message;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return content;
+}
+
+const content = await readStream(result.stream);
+console.log(content); // Output: Hello (or the full streamed response)
+```
+
+**Key Points:**
+- `StreamingTask` lets you implement `stream(input)` to return a `ReadableStream` of text chunks.
+- Each chunk from the AI SDK is parsed and appended to the final content.
+- This approach allows you to process LLM output in real time, ideal for chatbots and assistants. 
