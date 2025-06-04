@@ -1,4 +1,4 @@
-import { type DAGTask } from './DAG';
+import { type DAGTask } from './WorkflowBuilder';
 
 export interface TaskDefinition {
   name: string;
