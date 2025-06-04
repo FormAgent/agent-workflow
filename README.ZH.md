@@ -2,7 +2,7 @@
 
 一个强大的工作流引擎，支持 DAG（有向无环图）任务调度、动态任务生成和智能策略系统。
 
-[English](./README.md)[日本語](./README.JA.md)[中文](./README.ZH.md)
+[English](./README.md) | [日本語](./README.JA.md) | 中文
 
 ## ✨ 核心特性
 

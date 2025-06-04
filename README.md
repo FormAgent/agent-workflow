@@ -2,7 +2,7 @@
 
 A powerful workflow engine supporting DAG (Directed Acyclic Graph) task scheduling, dynamic task generation, and intelligent strategy systems.
 
-[English](./README.md)[日本語](./README.JA.md)[中文](./README.ZH.md)
+English | [日本語](./README.JA.md) | [中文](./README.ZH.md)
 
 ## ✨ Core Features
 

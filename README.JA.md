@@ -2,7 +2,7 @@
 
 DAG（有向非環グラフ）タスクスケジューリング、動的タスク生成、インテリジェント戦略システムをサポートする強力なワークフローエンジンです。
 
-[English](./README.md) | [日本語](./README.JA.md) | [中文](./README.ZH.md)
+[English](./README.md) | 日本語 | [中文](./README.ZH.md)
 
 ## ✨ コア機能
 
