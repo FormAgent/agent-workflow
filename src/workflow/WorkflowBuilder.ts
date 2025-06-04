@@ -584,6 +584,29 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
         await this.evaluateStrategiesAndGenerateTasks();
       }
 
+      // 检查是否因为循环依赖而无法继续
+      if (!this.hasTasksToExecute() && this.shouldContinue()) {
+        const processedTaskNames = new Set(
+          this.context
+            .getExecutionHistory()
+            .filter(
+              (h) =>
+                h.status === 'completed' ||
+                h.status === 'failed' ||
+                h.status === 'skipped'
+            )
+            .map((h) => h.taskName)
+        );
+
+        const unprocessedTasks = this.tasks.filter(
+          (task) => !processedTaskNames.has(task.name || '')
+        );
+
+        if (unprocessedTasks.length > 0) {
+          throw new Error('检测到循环依赖，无法执行工作流');
+        }
+      }
+
       return {
         success: true,
         data: this.context.getAll(),
@@ -605,7 +628,8 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
   }
 
   protected hasTasksToExecute(): boolean {
-    return this.getReadyTasks().length > 0;
+    const readyTasks = this.getReadyTasks();
+    return readyTasks.length > 0;
   }
 
   protected shouldContinue(): boolean {
@@ -704,13 +728,31 @@ class StreamingStaticWorkflow
   extends StaticWorkflow
   implements StreamingWorkflow
 {
-  executeStream(input: TaskInput = {}): StreamingWorkflowResult {
-    const resultPromise = this.execute(input);
+  private streamResult: WorkflowResult | undefined;
 
+  executeStream(input: TaskInput = {}): StreamingWorkflowResult {
+    this.streamResult = undefined; // 重置
     const stream = this.createExecutionStream(input);
 
+    const resultPromise = (async (): Promise<WorkflowResult> => {
+      // 消费流直到完成，生成器会设置streamResult
+      for await (const chunk of stream) {
+        // 流处理
+      }
+
+      // 返回流式执行的结果
+      return (
+        this.streamResult || {
+          success: false,
+          error: new Error('流式执行未完成'),
+          executionTime: 0,
+          taskResults: new Map(),
+        }
+      );
+    })();
+
     return {
-      stream,
+      stream: this.createExecutionStream(input),
       getResult: () => resultPromise,
     };
   }
@@ -744,6 +786,9 @@ class StreamingStaticWorkflow
         taskResults: this.taskResults,
       };
 
+      // 保存结果供getResult使用
+      this.streamResult = result;
+
       yield {
         type: 'complete',
         taskName: 'workflow',
@@ -754,6 +799,16 @@ class StreamingStaticWorkflow
 
       return result;
     } catch (error) {
+      const errorResult: WorkflowResult = {
+        success: false,
+        error: error as Error,
+        executionTime: Date.now() - this.startTime,
+        taskResults: this.taskResults,
+      };
+
+      // 保存错误结果
+      this.streamResult = errorResult;
+
       yield {
         type: 'error',
         taskName: 'workflow',
@@ -761,12 +816,7 @@ class StreamingStaticWorkflow
         timestamp: Date.now(),
       };
 
-      return {
-        success: false,
-        error: error as Error,
-        executionTime: Date.now() - this.startTime,
-        taskResults: this.taskResults,
-      };
+      return errorResult;
     }
   }
 
@@ -821,17 +871,25 @@ class StreamingStaticWorkflow
       // 检查是否是流式任务
       if (task.isStreaming && task.executeStream) {
         const generator = task.executeStream(input);
-        for await (const chunk of generator) {
-          yield {
-            type: 'data',
-            taskName: task.name,
-            content: chunk,
-            timestamp: Date.now(),
-          };
+        let finalResult: Record<string, any> = {};
+
+        try {
+          // 迭代生成器并产出所有中间结果
+          while (true) {
+            const { value, done } = await generator.next();
+            if (done) {
+              finalResult = value || {};
+              break;
+            }
+            // 产出流式数据
+            yield value;
+          }
+        } catch (error) {
+          // 流式任务执行过程中的错误
+          throw error;
         }
-        // 获取最终结果
-        const { value } = await generator.next();
-        output = value || {};
+
+        output = finalResult;
       } else {
         // 普通任务执行
         output = await task.execute(input);
@@ -907,13 +965,31 @@ class StreamingStrategyBasedWorkflow
   extends StrategyBasedWorkflow
   implements StreamingWorkflow
 {
-  executeStream(input: TaskInput = {}): StreamingWorkflowResult {
-    const resultPromise = this.execute(input);
+  private streamResult: WorkflowResult | undefined;
 
+  executeStream(input: TaskInput = {}): StreamingWorkflowResult {
+    this.streamResult = undefined; // 重置
     const stream = this.createDynamicExecutionStream(input);
 
+    const resultPromise = (async (): Promise<WorkflowResult> => {
+      // 消费流直到完成，生成器会设置streamResult
+      for await (const chunk of stream) {
+        // 流处理
+      }
+
+      // 返回流式执行的结果
+      return (
+        this.streamResult || {
+          success: false,
+          error: new Error('流式执行未完成'),
+          executionTime: 0,
+          taskResults: new Map(),
+        }
+      );
+    })();
+
     return {
-      stream,
+      stream: this.createDynamicExecutionStream(input),
       getResult: () => resultPromise,
     };
   }
@@ -982,6 +1058,9 @@ class StreamingStrategyBasedWorkflow
         totalSteps: this.currentStep,
       };
 
+      // 保存结果供getResult使用
+      this.streamResult = result;
+
       yield {
         type: 'complete',
         taskName: 'workflow',
@@ -992,14 +1071,7 @@ class StreamingStrategyBasedWorkflow
 
       return result;
     } catch (error) {
-      yield {
-        type: 'error',
-        taskName: 'workflow',
-        content: error instanceof Error ? error.message : String(error),
-        timestamp: Date.now(),
-      };
-
-      return {
+      const errorResult: WorkflowResult = {
         success: false,
         error: error as Error,
         executionTime: Date.now() - this.startTime,
@@ -1007,6 +1079,18 @@ class StreamingStrategyBasedWorkflow
         dynamicTasksGenerated: this.dynamicTasksGenerated,
         totalSteps: this.currentStep,
       };
+
+      // 保存错误结果
+      this.streamResult = errorResult;
+
+      yield {
+        type: 'error',
+        taskName: 'workflow',
+        content: error instanceof Error ? error.message : String(error),
+        timestamp: Date.now(),
+      };
+
+      return errorResult;
     }
   }
 
@@ -1030,17 +1114,25 @@ class StreamingStrategyBasedWorkflow
       // 检查是否是流式任务
       if (task.isStreaming && task.executeStream) {
         const generator = task.executeStream(input);
-        for await (const chunk of generator) {
-          yield {
-            type: 'data',
-            taskName: task.name,
-            content: chunk,
-            timestamp: Date.now(),
-          };
+        let finalResult: Record<string, any> = {};
+
+        try {
+          // 迭代生成器并产出所有中间结果
+          while (true) {
+            const { value, done } = await generator.next();
+            if (done) {
+              finalResult = value || {};
+              break;
+            }
+            // 产出流式数据
+            yield value;
+          }
+        } catch (error) {
+          // 流式任务执行过程中的错误
+          throw error;
         }
-        // 获取最终结果
-        const { value } = await generator.next();
-        output = value || {};
+
+        output = finalResult;
       } else {
         // 普通任务执行
         output = await task.execute(input);
@@ -1082,6 +1174,25 @@ class StreamingStrategyBasedWorkflow
       };
     } catch (error) {
       console.warn('动态任务执行失败:', error);
+
+      const taskName = task.name || '';
+      let uniqueKey = taskName;
+      let counter = 1;
+      while (this.taskResults.has(uniqueKey)) {
+        uniqueKey = `${taskName}_${counter}`;
+        counter++;
+      }
+
+      const result: TaskExecutionResult = {
+        taskName: taskName,
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+        duration: Date.now() - taskStartTime,
+        timestamp: Date.now(),
+      };
+
+      this.taskResults.set(uniqueKey, result);
+      this.context.addExecutionResult(result);
 
       yield {
         type: 'error',

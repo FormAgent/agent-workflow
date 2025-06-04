@@ -24,13 +24,15 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
     "prepublishOnly": "npm run build",
-    "examples": "npm run example:basic && npm run example:dynamic && npm run example:llm && npm run example:error && npm run example:streaming && npm run example:ai-sdk",
+    "examples": "npm run example:basic && npm run example:dynamic && npm run example:llm && npm run example:error && npm run example:streaming && npm run example:ai-sdk && npm run example:agent && npm run example:planner",
     "example:basic": "npx tsx examples/basic-workflow.ts",
     "example:dynamic": "npx tsx examples/dynamic-strategies.ts",
     "example:llm": "npx tsx examples/llm-integration.ts",
     "example:error": "npx tsx examples/error-handling.ts",
     "example:streaming": "npx tsx examples/streaming-workflow.ts",
-    "example:ai-sdk": "npx tsx examples/ai-sdk-streaming-workflow.ts"
+    "example:ai-sdk": "npx tsx examples/ai-sdk-streaming-workflow.ts",
+    "example:agent": "npx tsx examples/simple-agent-style.ts",
+    "example:planner": "npx tsx examples/ai-planner-workflow.ts"
   },
   "devDependencies": {
     "@ai-sdk/openai": "^1.3.22",

@@ -1,14 +1,10 @@
 # 🚀 智能工作流引擎
 
-一个强大的工作流引擎，支持 DAG（有向无环图）任务调度、动态任务生成和智能策略系统。经过重构，使用复杂度降低90%，功能更加强大。
+一个强大的工作流引擎，支持 DAG（有向无环图）任务调度、动态任务生成和智能策略系统。
 
 [English](./README.md)
 
 ## ✨ 核心特性
-
-### 🎯 **大幅简化的API设计**
-- **重构前**: 需要5步复杂构造 (`Context → Executor → Engine → Workflow → Execute`)
-- **重构后**: 1行链式调用搞定 (`WorkflowBuilder.create().build().execute()`)
 
 ### 🔄 **强大的DAG任务调度**
 - 自动任务依赖解析和拓扑排序
@@ -62,7 +58,7 @@ class AnalysisTask implements DAGTask {
   }
 }
 
-// 🔥 重构后 - 1行搞定
+// 🔥 简洁强大 - 1行搞定
 const result = await WorkflowBuilder
   .create()
   .addTask(new DataProcessTask())
@@ -177,6 +173,94 @@ const workflow = WorkflowBuilder
 
 ## 🔧 动态策略系统
 
+动态策略是工作流引擎的智能核心，可以根据执行过程中的条件**动态生成新任务**，让工作流具备"自适应"能力。
+
+### 🎯 动态策略架构
+
+```typescript
+interface DynamicStrategy {
+  name: string;                                           // 策略标识符
+  condition: (context: WorkflowContext, result?: any) => boolean;  // 触发条件
+  generator: (context: WorkflowContext) => Promise<DAGTask[]>;     // 任务生成器
+  priority?: number;                                      // 执行优先级（数字越大越优先）
+  once?: boolean;                                         // 一次性执行标志
+}
+```
+
+### 📋 策略参数详细说明
+
+#### **name: string**
+- **作用**: 策略的唯一标识符
+- **用途**: 
+  - 日志输出和监控显示
+  - `once: true` 时追踪已执行策略
+  - 调试和问题排查
+
+#### **condition: (context, result?) => boolean**
+- **作用**: 决定策略何时触发
+- **工作机制**: 
+  - 在每个执行步骤后被调用
+  - 接收当前工作流上下文
+  - 返回 `true` 触发策略，`false` 跳过
+
+#### **generator: (context) => Promise<DAGTask[]>**
+- **作用**: 动态生成新任务
+- **工作机制**:
+  - 条件满足时调用此函数
+  - 接收当前上下文作为参数
+  - 返回需要添加到工作流的新任务数组
+
+#### **priority?: number (默认: 0)**
+- **作用**: 控制策略执行顺序
+- **工作机制**:
+  ```typescript
+  // 策略按优先级从高到低排序执行
+  const sortedStrategies = [...strategies].sort(
+    (a, b) => (b.priority || 0) - (a.priority || 0)
+  );
+  ```
+- **典型用法**:
+  - `priority: 10` - 高优先级（错误处理、关键任务）
+  - `priority: 5` - 中等优先级（常规业务逻辑）
+  - `priority: 1` - 低优先级（清理、日志记录）
+
+#### **once?: boolean (默认: false)**
+- **作用**: 控制策略是否只能执行一次
+- **工作机制**:
+  ```typescript
+  // 跳过已使用的一次性策略
+  if (strategy.once && this.usedStrategies.has(strategy.name)) {
+    continue;
+  }
+  
+  // 标记策略为已使用
+  if (strategy.once) {
+    this.usedStrategies.add(strategy.name);
+  }
+  ```
+- **使用场景**:
+  - `once: true` - 初始化、错误恢复、一次性设置
+  - `once: false` - 持续监控、重复任务
+
+### 🔄 策略执行流程
+
+```mermaid
+graph TD
+    A[任务执行完成] --> B[评估所有策略]
+    B --> C[按优先级排序]
+    C --> D[检查策略是否已使用once]
+    D --> E{条件是否满足?}
+    E -->|是| F[执行生成器]
+    E -->|否| G[跳过策略]
+    F --> H[添加新任务到队列]
+    H --> I{once=true?}
+    I -->|是| J[标记为已使用]
+    I -->|否| K[可重复使用]
+    J --> L[继续下一个策略]
+    K --> L
+    G --> L
+```
+
 ### 1. 条件策略 - `whenCondition()`
 
 ```typescript
@@ -243,6 +327,110 @@ const workflow = WorkflowBuilder
 })
 ```
 
+### 💡 实际应用场景
+
+#### 🚨 错误恢复策略
+```typescript
+.addDynamicStrategy({
+  name: 'error_recovery',
+  condition: (context) => context.get('hasError') === true,
+  generator: async (context) => [
+    new ErrorAnalysisTask(),     // 分析错误
+    new ErrorFixTask(),          // 修复错误  
+    new ValidationTask()         // 验证修复
+  ],
+  priority: 10,  // 最高优先级，错误时优先处理
+  once: true     // 一次性，避免无限错误循环
+})
+```
+
+#### 🔍 性能监控策略
+```typescript
+.addDynamicStrategy({
+  name: 'performance_monitoring', 
+  condition: (context) => {
+    const metrics = context.get('performanceMetrics');
+    return metrics?.loadTime > 5000; // 超过5秒
+  },
+  generator: async (context) => [
+    new PerformanceOptimizationTask(),
+    new CacheOptimizationTask()
+  ],
+  priority: 5,   // 中等优先级
+  once: false    // 可重复触发，持续监控
+})
+```
+
+#### 🧪 测试覆盖率策略
+```typescript
+.addDynamicStrategy({
+  name: 'test_coverage_boost',
+  condition: (context) => {
+    const coverage = context.get('testCoverage');
+    return coverage < 0.8; // 覆盖率低于80%
+  },
+  generator: async (context) => [
+    new TestGenerationTask(),
+    new CoverageAnalysisTask()
+  ],
+  priority: 3,   // 较低优先级
+  once: true     // 一次性生成即可
+})
+```
+
+### 🎯 策略设计最佳实践
+
+#### 1. **优先级设计原则**
+```typescript
+// 紧急情况 - 最高优先级
+priority: 10  // 错误恢复、安全问题
+priority: 8   // 数据一致性、关键业务
+
+// 常规业务 - 中等优先级  
+priority: 5   // 正常业务逻辑
+priority: 3   // 优化改进
+
+// 辅助功能 - 低优先级
+priority: 1   // 日志记录、清理任务
+priority: 0   // 统计、报告
+```
+
+#### 2. **once参数选择**
+```typescript
+// once: true 适用场景
+- 初始化任务
+- 错误恢复  
+- 一次性配置
+- 数据迁移
+
+// once: false 适用场景  
+- 性能监控
+- 数据同步
+- 持续优化
+- 定期检查
+```
+
+#### 3. **条件设计技巧**
+```typescript
+// 简单布尔条件
+condition: (context) => context.get('needsOptimization') === true
+
+// 复杂逻辑条件
+condition: (context) => {
+  const metrics = context.get('metrics');
+  const config = context.get('config');
+  return metrics?.errorRate > 0.05 && config?.env === 'production';
+}
+
+// 基于执行历史的条件
+condition: (context) => {
+  const history = context.getExecutionHistory();
+  return history.some(h => h.status === 'failed');
+}
+```
+
+这个动态策略系统让工作流具备了**自适应能力**，能根据执行过程中的实际情况智能地调整执行计划，是工作流引擎的核心智能特性！🚀
+
 ## 📊 执行监控与结果
 
 ### 详细的执行结果
@@ -291,58 +479,6 @@ const history = workflow.getContext().getExecutionHistory();
 history.forEach(record => {
   console.log(`${record.taskName}: ${record.status} (${record.duration}ms)`);
 });
-```
-
-## 🔄 从旧版本迁移
-
-### 迁移对比
-
-```typescript
-// ❌ 旧版本 - 复杂的5步构造
-const planner = new LLMTaskPlanner('gpt-4-turbo');
-const context = new ContextManager();
-const executor = new TaskExecutor(context);
-const engine = new DynamicDAGWorkflowEngine(executor, planner);
-context.set('userRequest', '分析项目');
-await engine.planAndRun(context);
-
-// ✅ 新版本 - 1行链式调用
-const result = await WorkflowBuilder
-  .create()
-  .withLLMModel('gpt-4-turbo')
-  .withDynamicPlanning('分析项目')
-  .build()
-  .execute();
-```
-
-> **注意:** 新架构不再提供向后兼容适配器，建议直接使用新的WorkflowBuilder API，API设计更简洁易用。
-
-## 🧪 AI SDK 流式支持
-
-支持通过 [AI SDK](https://github.com/vercel/ai) 实现大模型响应的流式处理：
-
-```typescript
-import { streamText } from 'ai';
-
-class StreamingAnalysisTask implements DAGTask {
-  name = 'streamingAnalysis';
-  
-  async execute(input: TaskInput) {
-    const { textStream } = await streamText({
-      model: openai('gpt-4-turbo'),
-      prompt: `分析以下代码: ${input.code}`,
-    });
-
-    let fullAnalysis = '';
-    for await (const textPart of textStream) {
-      fullAnalysis += textPart;
-      // 实时处理流式输出
-      console.log('实时分析:', textPart);
-    }
-
-    return { ...input, analysis: fullAnalysis };
-  }
-}
 ```
 
 ## 🎯 最佳实践
@@ -423,6 +559,16 @@ npx tsx examples/error-handling.ts
 
 # 5. 流式工作流示例 - 展示实时流式数据返回
 npx tsx examples/streaming-workflow.ts
+
+# 🔥 新增：高级AI功能
+# 6. AI SDK流式示例 - 展示AI SDK兼容工作流
+npx tsx examples/ai-sdk-streaming-workflow.ts
+
+# 7. 简化Agent API示例 - 展示OpenAI Agent SDK兼容接口
+npx tsx examples/simple-agent-style.ts
+
+# 8. AI规划器示例 - 展示智能工作流生成
+npx tsx examples/ai-planner-workflow.ts
 ```
 
 ### 📖 示例说明
@@ -434,6 +580,9 @@ npx tsx examples/streaming-workflow.ts
 | **llm-integration.ts** | • AI任务规划<br>• 流式处理<br>• 智能决策 | 了解LLM驱动的工作流应用 |
 | **error-handling.ts** | • 错误处理<br>• 恢复策略<br>• 容错机制 | 学习构建健壮的工作流系统 |
 | **streaming-workflow.ts** | • 实时流式执行<br>• 前端友好返回<br>• 进度可视化 | 掌握流式工作流实现和前端集成 |
+| **🔥 ai-sdk-streaming-workflow.ts** | • **AI SDK 100%兼容**<br>• **streamText API**<br>• **Express路由集成** | 掌握AI SDK兼容工作流，适用于LLM应用 |
+| **🔥 simple-agent-style.ts** | • **OpenAI Agent SDK风格**<br>• **Agent转交机制**<br>• **工具函数支持** | 学习简化Agent API快速开发 |
+| **🔥 ai-planner-workflow.ts** | • **AI驱动规划**<br>• **智能任务生成**<br>• **JSON工作流配置** | 理解智能工作流规划系统 |
 
 ### 🎯 快速体验
 
@@ -471,59 +620,21 @@ npx tsx examples/error-handling.ts
 echo -e "\n5️⃣ 流式工作流示例"
 npx tsx examples/streaming-workflow.ts
 
+echo -e "\n6️⃣ AI SDK流式示例"
+npx tsx examples/ai-sdk-streaming-workflow.ts
+
+echo -e "\n7️⃣ 简化Agent API示例"
+npx tsx examples/simple-agent-style.ts
+
+echo -e "\n8️⃣ AI规划器示例"
+npx tsx examples/ai-planner-workflow.ts
+
 echo -e "\n✅ 所有示例运行完成！"
 EOF
 
 chmod +x run-examples.sh
 ./run-examples.sh
 ```
-
-## 🤝 贡献指南
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-## 📄 许可证
-
-MIT © [FormAgent](https://github.com/FormAgent)
-
----
-
-## 🎉 重构成果
-
-本次重构实现了：
-- **90%+ 使用复杂度降低** - 从5步构造到1行调用
-- **100% 功能保留** - 所有原有功能完整保留
-- **显著性能提升** - 优化的算法和执行引擎  
-- **增强的动态能力** - 多种智能策略支持
-- **完整类型安全** - 全面的TypeScript支持
-- **代码库精简** - 移除90%+旧架构代码，保持核心功能
-
-### 🧹 **架构精简**
-
-**删除的旧架构文件:**
-- `LLMTaskPlanner.ts` - 功能整合到WorkflowBuilder
-- `DynamicDAG.ts` - 被动态策略系统替代
-- `DAG.ts` - 功能内置到WorkflowBuilder
-- `TaskExecutor.ts` - 执行逻辑内置化
-- `Workflow.ts` - 被新的Workflow接口替代
-- `StreamingTask.ts` - 流式功能整合
-
-**保留的核心文件:**
-- `WorkflowBuilder.ts` - 新的统一核心系统 (16KB)
-- `TaskRegistry.ts` - 任务注册管理 (1KB)
-- `ContextManager.ts` - 上下文管理 (670B)
-- `Task.ts` - 基础任务接口 (705B)
-
-**测试文件精简:**
-- 从15+个测试文件精简到3个核心测试套件
-- 保持100%测试覆盖率和58个测试用例
-- 所有测试通过，功能完整验证
-
-让工作流开发更简单、更强大、更智能！ 🚀
 
 ## 🌊 流式工作流 - 实时用户体验
 
@@ -723,3 +834,244 @@ interface StreamingChunk {
 ```
 
 通过流式工作流，你可以为用户提供类似ChatGPT的实时响应体验！
+
+## 🤖 AI SDK 完美兼容
+
+### 完美的AI SDK集成
+
+我们的工作流系统提供与 [AI SDK](https://github.com/vercel/ai) **100%的API兼容性**，同时提供强大的工作流编排功能：
+
+```typescript
+// 🔥 AI SDK 兼容的流式任务
+class AICodeAnalysisTask implements DAGTask {
+  name = 'aiCodeAnalysis';
+  isAISDKStreaming = true;
+
+  async executeStreamAI(input: TaskInput) {
+    const { textStream, fullStream } = await streamText({
+      model: openai('gpt-4-turbo'),
+      prompt: `分析以下代码: ${input.code}`,
+    });
+
+    return {
+      textStream,
+      fullStream,
+      toDataStreamResponse: () => new Response(/* SSE stream */),
+      toReadableStream: () => new ReadableStream(/* text stream */)
+    };
+  }
+}
+
+// 🚀 构建AI SDK兼容的工作流
+const aiWorkflow = WorkflowBuilder
+  .create()
+  .addTask(new AICodeAnalysisTask())
+  .addTask(new AIDocumentationTask())
+  .buildAISDKStreaming(); // 🔥 AI SDK兼容构建器
+
+// 💫 完全像AI SDK一样使用
+const result = aiWorkflow.executeStreamAISDK(input);
+
+// 与AI SDK streamText相同的API！
+for await (const textChunk of result.textStream) {
+  console.log(textChunk); // 实时AI输出
+}
+
+// 或在Express路由中使用 - 无需任何代码更改！
+app.post('/api/ai/analyze', async (req, res) => {
+  const workflow = WorkflowBuilder
+    .create()
+    .addTask(new AICodeAnalysisTask())
+    .buildAISDKStreaming();
+
+  const streamResult = workflow.executeStreamAISDK(req.body);
+  
+  // 🎯 完全像AI SDK一样返回
+  return streamResult.toDataStreamResponse();
+});
+```
+
+### AI SDK vs 我们的实现对比
+
+| 功能特性 | AI SDK `streamText()` | 我们的AI工作流 |
+|---------|----------------------|------------------|
+| **API兼容性** | ✅ 简单 | ✅ 100%兼容 |
+| **多任务编排** | ❌ 单任务 | ✅ 复杂工作流 |
+| **动态任务生成** | ❌ 无 | ✅ 智能策略 |
+| **并行执行** | ❌ 串行 | ✅ 自动优化 |
+| **依赖管理** | ❌ 无 | ✅ DAG依赖 |
+| **错误恢复** | ❌ 基础 | ✅ 高级容错 |
+| **上下文管理** | ❌ 有限 | ✅ 丰富上下文 |
+| **性能** | ✅ 好 | ✅ 优化+并行 |
+
+**🎯 核心优势：**
+- **零迁移成本** - 与AI SDK相同的API
+- **工作流能力** - 单次调用实现复杂多任务编排
+- **AI优先设计** - 专为LLM应用构建
+- **生产就绪** - 高级错误处理和监控
+
+## 🎭 简化Agent风格API
+
+### OpenAI Agent SDK 兼容
+
+我们提供**简化的Agent API**，与OpenAI的Agent SDK几乎完全一致，但底层功能更强大：
+
+```typescript
+// 🤖 定义Agent（完全像OpenAI Agent SDK）
+const supportAgent = new Agent(
+  'Support & Returns',
+  '你是一个支持代理，可以提交退款和处理客户服务问题。',
+  [submitRefundRequest] // 工具函数
+);
+
+const shoppingAgent = new Agent(
+  'Shopping Assistant', 
+  '你是一个购物助手，可以搜索网络产品。',
+  [webSearch, analyzeOutfit]
+);
+
+const triageAgent = new Agent(
+  'Triage Agent',
+  '根据用户查询将用户路由到正确的代理。',
+  [],
+  [shoppingAgent, supportAgent] // 转交
+);
+
+// 🚀 完全像OpenAI Agent SDK一样运行
+const output = await Runner.runSync({
+  startingAgent: triageAgent,
+  input: "什么鞋子最适合我的海军蓝西装外套？"
+});
+
+console.log(output);
+// {
+//   "recommendation": "基于您的搭配，建议选择棕色或深蓝色休闲鞋",
+//   "suggestedProducts": [
+//     {"name": "Clarks沙漠靴", "price": "$120", "match": "95%"}
+//   ]
+// }
+```
+
+### API对比：OpenAI vs 我们的实现
+
+```python
+# OpenAI Agent SDK (Python)
+output = Runner.run_sync(
+    starting_agent=triage_agent,
+    input="什么鞋子适合我的搭配？"
+)
+```
+
+```typescript
+// 我们的实现 (TypeScript) - 几乎完全一致！
+const output = await Runner.runSync({
+  startingAgent: triageAgent,
+  input: "什么鞋子适合我的搭配？"
+});
+```
+
+**🎯 相比OpenAI Agent SDK的核心优势：**
+
+- ✅ **API简洁性**: 几乎完全一致的接口
+- ✅ **更强大**: 底层复杂工作流能力
+- ✅ **类型安全**: 完整的TypeScript支持
+- ✅ **灵活性**: 可扩展为多步骤工作流
+- ✅ **性能**: 自动并行执行和优化
+- ✅ **高级特性**: 动态策略、流式处理、上下文管理
+
+## 🧠 AI驱动的工作流规划
+
+### 智能规划器系统
+
+我们的AI规划器可以分析用户请求并自动生成优化的工作流配置：
+
+```typescript
+// 🧠 AI规划器分析请求并生成工作流
+class AIPlannerTask implements DAGTask {
+  async execute(input: TaskInput) {
+    const userRequest = input.userRequest;
+    
+    // AI分析："分析我的React TypeScript项目并优化它"
+    const workflowPlan = await this.generateWorkflowPlan(userRequest);
+    
+    return { workflowPlan };
+  }
+}
+
+// 🚀 规划器生成智能工作流配置
+const plannerWorkflow = WorkflowBuilder
+  .create()
+  .addTask(new AIPlannerTask())
+  .onTaskComplete('aiPlanner', async (result, context) => {
+    const plan = result.workflowPlan;
+    
+    // 🎯 执行动态生成的工作流
+    return await PlanExecutor.executePlan(plan, context.getAll());
+  })
+  .build();
+
+// 💫 单行创建复杂工作流
+const result = await plannerWorkflow.execute({
+  userRequest: "使用Python FastAPI创建带AI功能的天气应用"
+});
+```
+
+### AI规划器输出示例
+
+AI规划器生成结构化的JSON工作流：
+
+```json
+{
+  "workflow": {
+    "description": "AI驱动的天气应用开发",
+    "staticTasks": [
+      {
+        "type": "WebSearchTask",
+        "name": "weatherApiResearch",
+        "config": {"query": "2024最佳天气API", "maxResults": 5}
+      },
+      {
+        "type": "FileOperationTask",
+        "name": "projectSetup", 
+        "config": {"action": "create", "structure": "fastapi-project"}
+      }
+    ],
+    "dynamicStrategies": [
+      {
+        "type": "onTaskComplete",
+        "name": "apiSelectionStrategy",
+        "trigger": "天气API研究完成后",
+        "generateTasks": [
+          {
+            "type": "CodeGenerationTask",
+            "name": "weatherService",
+            "config": {"component": "weather-service", "framework": "fastapi"}
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**🎯 AI规划器特性：**
+- **智能请求分析** - 理解意图和需求
+- **优化任务选择** - 为工作选择最佳任务
+- **动态策略生成** - 创建智能条件逻辑
+- **多场景支持** - React分析、应用开发、通用查询
+- **JSON驱动执行** - 结构化、可重现的工作流
+
+
+## 🤝 贡献指南
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📄 许可证
+
+MIT © [FormAgent](https://github.com/FormAgent)
+
+让工作流开发更简单、更强大、更智能！ 🚀

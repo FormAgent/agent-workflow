@@ -1,14 +1,10 @@
 # 🚀 Intelligent Workflow Engine
 
-A powerful workflow engine supporting DAG (Directed Acyclic Graph) task scheduling, dynamic task generation, and intelligent strategy systems. After refactoring, complexity reduced by 90% with enhanced functionality.
+A powerful workflow engine supporting DAG (Directed Acyclic Graph) task scheduling, dynamic task generation, and intelligent strategy systems.
 
 [中文文档](./README.ZH.md)
 
 ## ✨ Core Features
-
-### 🎯 **Drastically Simplified API Design**
-- **Before**: 5-step complex construction (`Context → Executor → Engine → Workflow → Execute`)
-- **After**: 1-line chain call (`WorkflowBuilder.create().build().execute()`)
 
 ### 🔄 **Powerful DAG Task Scheduling**
 - Automatic task dependency resolution and topological sorting
@@ -62,7 +58,7 @@ class AnalysisTask implements DAGTask {
   }
 }
 
-// 🔥 After refactoring - 1 line does it all
+// 🔥 Simple and powerful - 1 line does it all
 const result = await WorkflowBuilder
   .create()
   .addTask(new DataProcessTask())
@@ -251,6 +247,314 @@ function WorkflowProgress() {
 }
 ```
 
+#### 3. Frontend (Vue)
+```vue
+<template>
+  <div>
+    <button @click="startWorkflow" :disabled="isRunning">
+      {{ isRunning ? 'Running...' : 'Start Analysis' }}
+    </button>
+    <progress :value="progress" max="100"></progress>
+    <div v-for="(msg, i) in messages" :key="i" class="message">
+      {{ msg }}
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+const messages = ref([]);
+const progress = ref(0);
+const isRunning = ref(false);
+
+const startWorkflow = async () => {
+  isRunning.value = true;
+  messages.value = [];
+  progress.value = 0;
+
+  const response = await fetch('/api/workflow/stream');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          
+          if (data.type === 'progress') {
+            progress.value = data.progress;
+          } else if (data.type === 'data') {
+            messages.value.push(data.content);
+          }
+        }
+      }
+    }
+  } finally {
+    isRunning.value = false;
+  }
+};
+</script>
+
+### Streaming Workflow Benefits
+
+- **✨ Real-time Feedback** - Users see progress immediately
+- **🚀 Long Task Support** - Perfect for time-consuming LLM analysis
+- **📊 Progress Visualization** - Clear progress bars and status
+- **🔄 Pausable/Resumable** - Support for pause and continue
+- **💬 Real-time Response** - LLM streaming output directly displayed
+- **🎯 Frontend-friendly** - Perfect user experience
+
+### Data Format
+
+Streaming workflows return standardized data chunks:
+
+```typescript
+interface StreamingChunk {
+  type: 'progress' | 'data' | 'error' | 'complete';
+  taskName: string;
+  content?: any;
+  progress?: number;        // 0-100
+  timestamp: number;
+  metadata?: Record<string, any>;
+}
+```
+
+Through streaming workflows, you can provide users with ChatGPT-like real-time response experience!
+
+## 🤖 AI SDK Compatible Streaming
+
+### Perfect AI SDK Integration
+
+Our workflow system provides **100% API compatibility** with [AI SDK](https://github.com/vercel/ai) while offering powerful workflow orchestration:
+
+```typescript
+// 🔥 AI SDK Compatible Streaming Tasks
+class AICodeAnalysisTask implements DAGTask {
+  name = 'aiCodeAnalysis';
+  isAISDKStreaming = true;
+
+  async executeStreamAI(input: TaskInput) {
+    const { textStream, fullStream } = await streamText({
+      model: openai('gpt-4-turbo'),
+      prompt: `Analyze this code: ${input.code}`,
+    });
+
+    return {
+      textStream,
+      fullStream,
+      toDataStreamResponse: () => new Response(/* SSE stream */),
+      toReadableStream: () => new ReadableStream(/* text stream */)
+    };
+  }
+}
+
+// 🚀 Build AI SDK Compatible Workflow
+const aiWorkflow = WorkflowBuilder
+  .create()
+  .addTask(new AICodeAnalysisTask())
+  .addTask(new AIDocumentationTask())
+  .buildAISDKStreaming(); // 🔥 AI SDK Compatible Builder
+
+// 💫 Use Exactly Like AI SDK
+const result = aiWorkflow.executeStreamAISDK(input);
+
+// Same API as AI SDK streamText!
+for await (const textChunk of result.textStream) {
+  console.log(textChunk); // Real-time AI output
+}
+
+// Or use in Express routes - zero code changes needed!
+app.post('/api/ai/analyze', async (req, res) => {
+  const workflow = WorkflowBuilder
+    .create()
+    .addTask(new AICodeAnalysisTask())
+    .buildAISDKStreaming();
+
+  const streamResult = workflow.executeStreamAISDK(req.body);
+  
+  // 🎯 Return exactly like AI SDK
+  return streamResult.toDataStreamResponse();
+});
+```
+
+### AI SDK vs Our Implementation
+
+| Feature | AI SDK `streamText()` | Our AI Workflow |
+|---------|----------------------|------------------|
+| **API Compatibility** | ✅ Simple | ✅ 100% Compatible |
+| **Multi-task Orchestration** | ❌ Single task | ✅ Complex workflows |
+| **Dynamic Task Generation** | ❌ No | ✅ Intelligent strategies |
+| **Parallel Execution** | ❌ Sequential | ✅ Automatic optimization |
+| **Dependency Management** | ❌ No | ✅ DAG-based dependencies |
+| **Error Recovery** | ❌ Basic | ✅ Advanced fault tolerance |
+| **Context Management** | ❌ Limited | ✅ Rich context system |
+| **Performance** | ✅ Good | ✅ Optimized + Parallel |
+
+**🎯 Key Benefits:**
+- **Zero Migration Cost** - Same API as AI SDK
+- **Workflow Power** - Multi-task orchestration with single-call simplicity  
+- **AI-First Design** - Built for LLM applications
+- **Production Ready** - Advanced error handling and monitoring
+
+## 🎭 Simple Agent-Style API
+
+### OpenAI Agent SDK Compatible
+
+We provide a **simplified Agent API** that's almost identical to OpenAI's Agent SDK but with much more power under the hood:
+
+```typescript
+// 🤖 Define Agents (exactly like OpenAI Agent SDK)
+const supportAgent = new Agent(
+  'Support & Returns',
+  'You are a support agent who can submit refunds and handle customer service issues.',
+  [submitRefundRequest] // tools
+);
+
+const shoppingAgent = new Agent(
+  'Shopping Assistant',
+  'You are a shopping assistant who can search the web for products.',
+  [webSearch, analyzeOutfit]
+);
+
+const triageAgent = new Agent(
+  'Triage Agent',
+  'Route the user to the correct agent based on their query.',
+  [],
+  [shoppingAgent, supportAgent] // handoffs
+);
+
+// 🚀 Run Exactly Like OpenAI Agent SDK
+const output = await Runner.runSync({
+  startingAgent: triageAgent,
+  input: "What shoes might work best with my navy blazer outfit?"
+});
+
+console.log(output);
+// {
+//   "recommendation": "Based on your outfit, suggest brown or navy casual shoes",
+//   "suggestedProducts": [
+//     {"name": "Clarks Desert Boots", "price": "$120", "match": "95%"}
+//   ]
+// }
+```
+
+### API Comparison: OpenAI vs Ours
+
+```python
+# OpenAI Agent SDK (Python)
+output = Runner.run_sync(
+    starting_agent=triage_agent,
+    input="What shoes work with my outfit?"
+)
+```
+
+```typescript
+// Our Implementation (TypeScript) - Nearly Identical!
+const output = await Runner.runSync({
+  startingAgent: triageAgent,
+  input: "What shoes work with my outfit?"
+});
+```
+
+**🎯 Core Advantages Over OpenAI Agent SDK:**
+
+- ✅ **API Simplicity**: Nearly identical interface
+- ✅ **More Powerful**: Complex workflow capabilities underneath
+- ✅ **Type Safety**: Full TypeScript support
+- ✅ **Flexibility**: Can expand to multi-step workflows
+- ✅ **Performance**: Automatic parallel execution and optimization
+- ✅ **Advanced Features**: Dynamic strategies, streaming, context management
+
+## 🧠 AI-Powered Workflow Planning
+
+### Intelligent Planner System
+
+Our AI Planner can analyze user requests and automatically generate optimized workflow configurations:
+
+```typescript
+// 🧠 AI Planner analyzes requests and generates workflows
+class AIPlannerTask implements DAGTask {
+  async execute(input: TaskInput) {
+    const userRequest = input.userRequest;
+    
+    // AI analyzes: "Analyze my React TypeScript project and optimize it"
+    const workflowPlan = await this.generateWorkflowPlan(userRequest);
+    
+    return { workflowPlan };
+  }
+}
+
+// 🚀 Planner generates intelligent workflow configurations
+const plannerWorkflow = WorkflowBuilder
+  .create()
+  .addTask(new AIPlannerTask())
+  .onTaskComplete('aiPlanner', async (result, context) => {
+    const plan = result.workflowPlan;
+    
+    // 🎯 Execute dynamically generated workflow
+    return await PlanExecutor.executePlan(plan, context.getAll());
+  })
+  .build();
+
+// 💫 Single line creates complex workflows
+const result = await plannerWorkflow.execute({
+  userRequest: "Create a weather app with AI features using Python FastAPI"
+});
+```
+
+### AI Planner Output Example
+
+The AI Planner generates structured JSON workflows:
+
+```json
+{
+  "workflow": {
+    "description": "AI-powered weather app development",
+    "staticTasks": [
+      {
+        "type": "WebSearchTask",
+        "name": "weatherApiResearch",
+        "config": {"query": "best weather APIs 2024", "maxResults": 5}
+      },
+      {
+        "type": "FileOperationTask",
+        "name": "projectSetup", 
+        "config": {"action": "create", "structure": "fastapi-project"}
+      }
+    ],
+    "dynamicStrategies": [
+      {
+        "type": "onTaskComplete",
+        "name": "apiSelectionStrategy",
+        "trigger": "After weather API research completes",
+        "generateTasks": [
+          {
+            "type": "CodeGenerationTask",
+            "name": "weatherService",
+            "config": {"component": "weather-service", "framework": "fastapi"}
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**🎯 AI Planner Features:**
+- **Smart Request Analysis** - Understands intent and requirements
+- **Optimized Task Selection** - Chooses best tasks for the job  
+- **Dynamic Strategy Generation** - Creates intelligent conditional logic
+- **Multi-scenario Support** - React analysis, app development, general queries
+- **JSON-Driven Execution** - Structured, reproducible workflows
+
 ## 🎛️ Advanced Configuration
 
 ### Complete Configuration Example
@@ -292,6 +596,94 @@ const workflow = WorkflowBuilder
 ```
 
 ## 🔧 Dynamic Strategy System
+
+Dynamic strategies are the intelligent core of the workflow engine, enabling **adaptive task generation** based on runtime conditions. They give workflows the ability to intelligently adjust execution plans during runtime.
+
+### 🎯 Dynamic Strategy Architecture
+
+```typescript
+interface DynamicStrategy {
+  name: string;                                           // Strategy identifier  
+  condition: (context: WorkflowContext, result?: any) => boolean;  // Trigger condition
+  generator: (context: WorkflowContext) => Promise<DAGTask[]>;     // Task generator
+  priority?: number;                                      // Execution priority (higher = first)
+  once?: boolean;                                         // One-time execution flag
+}
+```
+
+### 📋 Strategy Parameters Explained
+
+#### **name: string**
+- **Purpose**: Unique identifier for the strategy
+- **Usage**: 
+  - Display in logs and monitoring
+  - Track executed strategies when `once: true`
+  - Debug and troubleshooting
+
+#### **condition: (context, result?) => boolean**
+- **Purpose**: Determines when strategy should trigger
+- **Mechanism**: 
+  - Called after each execution step
+  - Receives current workflow context
+  - Returns `true` to trigger, `false` to skip
+
+#### **generator: (context) => Promise<DAGTask[]>**
+- **Purpose**: Dynamically generates new tasks
+- **Mechanism**:
+  - Called when condition is met
+  - Receives current context as parameter
+  - Returns array of new tasks to add to workflow
+
+#### **priority?: number (default: 0)**
+- **Purpose**: Controls strategy execution order
+- **Mechanism**:
+  ```typescript
+  // Strategies sorted by priority (high to low)
+  const sortedStrategies = [...strategies].sort(
+    (a, b) => (b.priority || 0) - (a.priority || 0)
+  );
+  ```
+- **Typical Usage**:
+  - `priority: 10` - High priority (error handling, critical tasks)
+  - `priority: 5` - Medium priority (regular business logic)  
+  - `priority: 1` - Low priority (cleanup, logging)
+
+#### **once?: boolean (default: false)**
+- **Purpose**: Controls whether strategy can execute multiple times
+- **Mechanism**:
+  ```typescript
+  // Skip already-used one-time strategies
+  if (strategy.once && this.usedStrategies.has(strategy.name)) {
+    continue;
+  }
+  
+  // Mark strategy as used
+  if (strategy.once) {
+    this.usedStrategies.add(strategy.name);
+  }
+  ```
+- **Use Cases**:
+  - `once: true` - Initialization, error recovery, one-time setup
+  - `once: false` - Continuous monitoring, repeated tasks
+
+### 🔄 Strategy Execution Flow
+
+```mermaid
+graph TD
+    A[Task Execution Complete] --> B[Evaluate All Strategies]
+    B --> C[Sort by Priority]
+    C --> D[Check if Strategy Already Used]
+    D --> E{Condition Met?}
+    E -->|Yes| F[Execute Generator]
+    E -->|No| G[Skip Strategy]
+    F --> H[Add New Tasks to Queue]
+    H --> I{once=true?}
+    I -->|Yes| J[Mark as Used]
+    I -->|No| K[Can Reuse]
+    J --> L[Continue to Next Strategy]
+    K --> L
+    G --> L
+```
 
 ### 1. Condition Strategy - `whenCondition()`
 
@@ -359,6 +751,110 @@ const workflow = WorkflowBuilder
 })
 ```
 
+### 💡 Real-World Strategy Examples
+
+#### 🚨 Error Recovery Strategy
+```typescript
+.addDynamicStrategy({
+  name: 'error_recovery',
+  condition: (context) => context.get('hasError') === true,
+  generator: async (context) => [
+    new ErrorAnalysisTask(),     // Analyze error
+    new ErrorFixTask(),          // Fix error  
+    new ValidationTask()         // Validate fix
+  ],
+  priority: 10,  // Highest priority - handle errors first
+  once: true     // One-time only - avoid infinite error loops
+})
+```
+
+#### 🔍 Performance Monitoring Strategy
+```typescript
+.addDynamicStrategy({
+  name: 'performance_monitoring', 
+  condition: (context) => {
+    const metrics = context.get('performanceMetrics');
+    return metrics?.loadTime > 5000; // Over 5 seconds
+  },
+  generator: async (context) => [
+    new PerformanceOptimizationTask(),
+    new CacheOptimizationTask()
+  ],
+  priority: 5,   // Medium priority
+  once: false    // Can trigger repeatedly for continuous monitoring
+})
+```
+
+#### 🧪 Test Coverage Strategy
+```typescript
+.addDynamicStrategy({
+  name: 'test_coverage_boost',
+  condition: (context) => {
+    const coverage = context.get('testCoverage');
+    return coverage < 0.8; // Coverage below 80%
+  },
+  generator: async (context) => [
+    new TestGenerationTask(),
+    new CoverageAnalysisTask()
+  ],
+  priority: 3,   // Lower priority
+  once: true     // One-time generation is sufficient
+})
+```
+
+### 🎯 Strategy Design Best Practices
+
+#### 1. **Priority Design Principles**
+```typescript
+// Emergency situations - Highest priority
+priority: 10  // Error recovery, security issues
+priority: 8   // Data consistency, critical business
+
+// Regular business - Medium priority  
+priority: 5   // Normal business logic
+priority: 3   // Optimization improvements
+
+// Support functions - Low priority
+priority: 1   // Logging, cleanup tasks
+priority: 0   // Statistics, reporting
+```
+
+#### 2. **Once Parameter Selection**
+```typescript
+// once: true use cases
+- Initialization tasks
+- Error recovery  
+- One-time configuration
+- Data migration
+
+// once: false use cases  
+- Performance monitoring
+- Data synchronization
+- Continuous optimization
+- Periodic checks
+```
+
+#### 3. **Condition Design Tips**
+```typescript
+// Simple boolean condition
+condition: (context) => context.get('needsOptimization') === true
+
+// Complex logic condition
+condition: (context) => {
+  const metrics = context.get('metrics');
+  const config = context.get('config');
+  return metrics?.errorRate > 0.05 && config?.env === 'production';
+}
+
+// Execution history-based condition
+condition: (context) => {
+  const history = context.getExecutionHistory();
+  return history.some(h => h.status === 'failed');
+}
+```
+
+This dynamic strategy system gives workflows **adaptive intelligence**, enabling them to intelligently adjust execution plans based on real-time conditions during execution! 🚀
+
 ## 📊 Execution Monitoring and Results
 
 ### Detailed Execution Results
@@ -407,58 +903,6 @@ const history = workflow.getContext().getExecutionHistory();
 history.forEach(record => {
   console.log(`${record.taskName}: ${record.status} (${record.duration}ms)`);
 });
-```
-
-## 🔄 Migration from Legacy Version
-
-### Migration Comparison
-
-```typescript
-// ❌ Legacy version - Complex 5-step construction
-const planner = new LLMTaskPlanner('gpt-4-turbo');
-const context = new ContextManager();
-const executor = new TaskExecutor(context);
-const engine = new DynamicDAGWorkflowEngine(executor, planner);
-context.set('userRequest', 'Analyze project');
-await engine.planAndRun(context);
-
-// ✅ New version - 1-line chain call
-const result = await WorkflowBuilder
-  .create()
-  .withLLMModel('gpt-4-turbo')
-  .withDynamicPlanning('Analyze project')
-  .build()
-  .execute();
-```
-
-> **Note:** The new architecture no longer provides backward compatibility adapters. We recommend migrating directly to the new WorkflowBuilder API, which features a more concise and user-friendly design.
-
-## 🧪 AI SDK Streaming Support
-
-Supports streaming processing of large model responses through [AI SDK](https://github.com/vercel/ai):
-
-```typescript
-import { streamText } from 'ai';
-
-class StreamingAnalysisTask implements DAGTask {
-  name = 'streamingAnalysis';
-  
-  async execute(input: TaskInput) {
-    const { textStream } = await streamText({
-      model: openai('gpt-4-turbo'),
-      prompt: `Analyze the following code: ${input.code}`,
-    });
-
-    let fullAnalysis = '';
-    for await (const textPart of textStream) {
-      fullAnalysis += textPart;
-      // Process streaming output in real-time
-      console.log('Real-time analysis:', textPart);
-    }
-
-    return { ...input, analysis: fullAnalysis };
-  }
-}
 ```
 
 ## 🎯 Best Practices
@@ -539,6 +983,16 @@ npx tsx examples/error-handling.ts
 
 # 5. Streaming workflow example - Shows real-time streaming data return
 npx tsx examples/streaming-workflow.ts
+
+# 🔥 NEW: Advanced AI Features
+# 6. AI SDK streaming example - Shows AI SDK compatible workflows
+npx tsx examples/ai-sdk-streaming-workflow.ts
+
+# 7. Simple Agent API example - Shows OpenAI Agent SDK compatible interface
+npx tsx examples/simple-agent-style.ts
+
+# 8. AI Planner example - Shows intelligent workflow generation
+npx tsx examples/ai-planner-workflow.ts
 ```
 
 ### 📖 Example Descriptions
@@ -550,6 +1004,9 @@ npx tsx examples/streaming-workflow.ts
 | **llm-integration.ts** | • AI task planning<br>• Streaming processing<br>• Intelligent decision making | Understand LLM-driven workflow applications |
 | **error-handling.ts** | • Error handling<br>• Recovery strategies<br>• Fault tolerance mechanisms | Learn to build robust workflow systems |
 | **streaming-workflow.ts** | • Real-time streaming execution<br>• Frontend-friendly returns<br>• Progress visualization | Master streaming workflow implementation and frontend integration |
+| **🔥 ai-sdk-streaming-workflow.ts** | • **AI SDK compatibility**<br>• **100% API compatibility**<br>• **Express integration** | Master AI SDK compatible workflows for LLM apps |
+| **🔥 simple-agent-style.ts** | • **OpenAI Agent SDK style**<br>• **Agent handoffs**<br>• **Tool functions** | Learn simplified Agent API for rapid development |
+| **🔥 ai-planner-workflow.ts** | • **AI-driven planning**<br>• **Smart task generation**<br>• **JSON workflow configs** | Understand intelligent workflow planning |
 
 ### 🎯 Quick Experience
 
@@ -587,6 +1044,15 @@ npx tsx examples/error-handling.ts
 echo -e "\n5️⃣ Streaming workflow example"
 npx tsx examples/streaming-workflow.ts
 
+echo -e "\n6️⃣ AI SDK streaming example"
+npx tsx examples/ai-sdk-streaming-workflow.ts
+
+echo -e "\n7️⃣ Simple Agent API example"
+npx tsx examples/simple-agent-style.ts
+
+echo -e "\n8️⃣ AI Planner example"
+npx tsx examples/ai-planner-workflow.ts
+
 echo -e "\n✅ All examples completed!"
 EOF
 
@@ -605,17 +1071,5 @@ chmod +x run-examples.sh
 ## 📄 License
 
 MIT © [FormAgent](https://github.com/FormAgent)
-
----
-
-## 🎉 Refactoring Achievements
-
-This refactoring achieved:
-- **90%+ reduction in usage complexity** - From 5-step construction to 1-line call
-- **100% feature preservation** - All original functionality completely retained
-- **Significant performance improvements** - Optimized algorithms and execution engine  
-- **Enhanced dynamic capabilities** - Multiple intelligent strategy support
-- **Complete type safety** - Comprehensive TypeScript support
-- **Streamlined codebase** - Removed 90%+ legacy architecture code while maintaining core functionality
 
 Make workflow development simpler, more powerful, and more intelligent! 🚀
