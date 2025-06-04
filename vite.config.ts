@@ -13,6 +13,15 @@ export default defineConfig({
     sourcemap: true,
     minify: 'terser',
     rollupOptions: {
+      external: ['zod', 'ai', '@ai-sdk/openai', 'openai'],
+      output: {
+        globals: {
+          zod: 'z',
+          ai: 'ai',
+          '@ai-sdk/openai': 'openai',
+          openai: 'OpenAI',
+        },
+      },
       treeshake: {
         moduleSideEffects: false,
       },
@@ -41,6 +50,12 @@ export default defineConfig({
   plugins: [
     dts({
       insertTypesEntry: true,
+      exclude: [
+        'examples/**/*',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        'src/**/__tests__/**/*',
+      ],
     }),
   ],
   esbuild: {
