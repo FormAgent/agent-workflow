@@ -5,13 +5,12 @@ import {
   type DynamicStrategy,
   type DAGTask,
 } from '../WorkflowBuilder';
-import { TaskRegistry } from '../TaskRegistry';
 import type { TaskInput } from '../Task';
 
 // Mock任务类型
-interface MockTask extends DAGTask {
+interface MockTask {
   name: string;
-  dependsOn?: DAGTask[];
+  dependsOn: DAGTask[];
   execute: jest.MockedFunction<
     (input: TaskInput) => Promise<Record<string, any>>
   >;
@@ -28,17 +27,12 @@ function createMockTask(
     execute: jest
       .fn<(input: TaskInput) => Promise<Record<string, any>>>()
       .mockResolvedValue({ [name]: output }),
-    dependsOn: dependencies.length > 0 ? dependencies : undefined,
+    dependsOn: dependencies,
   };
 }
 
 describe('WorkflowBuilder', () => {
-  let registry: TaskRegistry;
-
   beforeEach(() => {
-    registry = TaskRegistry.getInstance();
-    // 清空注册表
-    (registry as any).tasks = new Map();
     jest.clearAllMocks();
   });
 
@@ -50,11 +44,9 @@ describe('WorkflowBuilder', () => {
 
     it('应该支持链式配置', () => {
       const builder = WorkflowBuilder.create()
-        .withLLMModel('gpt-4')
         .withRetry(3)
         .withTimeout(5000)
         .withConfig({
-          enableDynamicPlanning: true,
           maxDynamicSteps: 10,
         });
 
@@ -338,10 +330,7 @@ describe('WorkflowBuilder', () => {
 
   describe('🤖 LLM动态工作流测试', () => {
     it('应该创建LLM驱动的动态工作流', () => {
-      const workflow = WorkflowBuilder.create()
-        .withLLMModel('gpt-4-turbo')
-        .withDynamicPlanning('创建一个代码分析工作流')
-        .build();
+      const workflow = WorkflowBuilder.create().build();
 
       expect(workflow).toBeDefined();
       // 注意：这里不执行实际的LLM调用，因为需要API密钥
@@ -413,7 +402,6 @@ describe('WorkflowBuilder', () => {
         retryAttempts: 3,
         timeoutMs: 5000,
         maxDynamicSteps: 20,
-        enableDynamicPlanning: true,
       };
 
       const workflow = WorkflowBuilder.create().withConfig(config).build();
@@ -463,7 +451,7 @@ describe('WorkflowBuilder', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBeInstanceOf(Error);
-      expect(result.error?.message).toContain('循环依赖');
+      expect(result.error?.message).toContain('Circular dependency');
     });
 
     it('应该处理大量任务', async () => {

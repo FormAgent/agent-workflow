@@ -1,14 +1,16 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { WorkflowBuilder, type DAGTask } from '../WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../WorkflowBuilder';
 import type { TaskInput } from '../Task';
 
 // 简单的测试任务实现
-class SimpleTask implements DAGTask {
+class SimpleTask extends DAGTask {
   constructor(
     public name: string,
     private outputData: Record<string, any> = {},
-    public dependsOn?: DAGTask[]
-  ) {}
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     // 简单的模拟延迟
@@ -33,7 +35,7 @@ describe('WorkflowBuilder 功能测试', () => {
 
     it('应该支持链式配置', () => {
       const builder = WorkflowBuilder.create()
-        .withLLMModel('gpt-4')
+
         .withRetry(3)
         .withTimeout(5000);
 

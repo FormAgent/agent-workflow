@@ -120,6 +120,7 @@ class MockStreamingLLMService {
 
 // 🔍 流式代码分析任务
 class StreamingCodeAnalysisTask {
+  dependsOn: any[] = [];
   name = 'streamingCodeAnalysis';
   isStreaming = true;
 
@@ -175,6 +176,7 @@ class StreamingCodeAnalysisTask {
 
 // 🚀 流式性能优化任务
 class StreamingPerformanceTask {
+  dependsOn: any[] = [];
   name = 'streamingPerformance';
   isStreaming = true;
 
@@ -212,6 +214,7 @@ class StreamingPerformanceTask {
 
 // 📝 流式报告生成任务
 class StreamingReportTask {
+  dependsOn: any[] = [];
   name = 'streamingReport';
   isStreaming = true;
   dependsOn?: any[];

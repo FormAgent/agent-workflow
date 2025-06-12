@@ -42,16 +42,24 @@ pnpm add agent-workflow
 import { WorkflowBuilder } from 'agent-workflow';
 
 // タスクの定義
-class DataProcessTask implements DAGTask {
+class DataProcessTask extends DAGTask {
   name = 'dataProcess';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const processed = input.rawData.toUpperCase();
     return { ...input, processed };
   }
 }
 
-class AnalysisTask implements DAGTask {
+class AnalysisTask extends DAGTask {
   name = 'analysis';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const analysis = `分析結果: ${input.processed}`;
     return { ...input, analysis };
@@ -120,11 +128,17 @@ const workflow = WorkflowBuilder
 ### LLM駆動のインテリジェントワークフロー
 
 ```typescript
-// 🤖 AI自動タスクフロープランニング
+// 🤖 戦略ベースのワークフロー計画
 const result = await WorkflowBuilder
   .create()
-  .withLLMModel('gpt-4-turbo')
-  .withDynamicPlanning('このVueプロジェクトを分析し、コード品質レポートを生成してください')
+  .addDynamicStrategy({
+    name: 'project_analysis',
+    condition: () => true,
+    generator: async (value, context) => {
+      // プロジェクトタイプに基づいて分析タスクを生成
+      return []; // 分析に基づいてタスクを返す
+    }
+  })
   .build()
   .execute({ projectPath: './my-vue-app' });
 
@@ -139,7 +153,6 @@ console.log('AI自動生成の分析レポート:', result.data);
 const workflow = WorkflowBuilder
   .create()
   .withConfig({
-    llmModel: 'gpt-4-turbo',
     retryAttempts: 3,
     timeoutMs: 60000,
     maxDynamicSteps: 20
@@ -486,13 +499,15 @@ history.forEach(record => {
 ### 1. タスク設計原則
 
 ```typescript
-class WellDesignedTask implements DAGTask {
+class WellDesignedTask extends DAGTask {
   constructor(
     public name: string,
     private config: TaskConfig
-  ) {}
+  ) {
+    super([]);
+}
 
-  async execute(input: TaskInput): Promise<Record<string, any>> {
+  async executeasync execute(input: TaskInput): Promise<Record<string, any>> {
     // ✅ 入力検証
     this.validateInput(input);
     
@@ -843,7 +858,7 @@ interface StreamingChunk {
 
 ```typescript
 // 🔥 AI SDK互換のストリーミングタスク
-class AICodeAnalysisTask implements DAGTask {
+class AICodeAnalysisTask extends DAGTask {
   name = 'aiCodeAnalysis';
   isAISDKStreaming = true;
 
@@ -987,7 +1002,7 @@ const output = await Runner.runSync({
 
 ```typescript
 // 🧠 AIプランナーがリクエストを分析してワークフローを生成
-class AIPlannerTask implements DAGTask {
+class AIPlannerTask extends DAGTask {
   async execute(input: TaskInput) {
     const userRequest = input.userRequest;
     

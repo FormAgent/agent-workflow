@@ -2,6 +2,7 @@
 
 import {
   WorkflowBuilder,
+  DAGTask,
   type AISDKStreamingTask,
 } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
@@ -104,9 +105,13 @@ class MockStreamTextResult {
 }
 
 // 🤖 AI SDK 兼容的代码分析任务
-class AICodeAnalysisTask implements AISDKStreamingTask {
+class AICodeAnalysisTask extends DAGTask implements AISDKStreamingTask {
   name = 'aiCodeAnalysis';
   isAISDKStreaming = true;
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     // 普通执行方法（兼容性）
@@ -131,9 +136,13 @@ class AICodeAnalysisTask implements AISDKStreamingTask {
 }
 
 // 🤖 AI 文档生成任务
-class AIDocumentationTask implements AISDKStreamingTask {
+class AIDocumentationTask extends DAGTask implements AISDKStreamingTask {
   name = 'aiDocumentation';
   isAISDKStreaming = true;
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     return {
@@ -157,9 +166,13 @@ class AIDocumentationTask implements AISDKStreamingTask {
 }
 
 // 📊 普通状态任务（用于对比）
-class StatusTask implements AISDKStreamingTask {
+class StatusTask extends DAGTask implements AISDKStreamingTask {
   name = 'statusTask';
   isAISDKStreaming = false; // 不是AI流式任务
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     await new Promise((resolve) => setTimeout(resolve, 500));

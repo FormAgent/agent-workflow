@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -117,8 +116,12 @@ class MockLLMService {
 }
 
 // 🔍 AI代码分析任务
-class AICodeAnalysisTask implements DAGTask {
+class AICodeAnalysisTask extends DAGTask {
   name = 'aiCodeAnalysis';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🧠 正在使用AI分析代码...');
@@ -139,8 +142,12 @@ class AICodeAnalysisTask implements DAGTask {
 }
 
 // 📝 AI流式文档生成任务
-class AIStreamingDocumentationTask implements DAGTask {
+class AIStreamingDocumentationTask extends DAGTask {
   name = 'aiDocumentation';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📝 正在使用AI流式生成文档...');
@@ -171,8 +178,12 @@ class AIStreamingDocumentationTask implements DAGTask {
 }
 
 // 🔍 智能代码审查任务
-class AICodeReviewTask implements DAGTask {
+class AICodeReviewTask extends DAGTask {
   name = 'aiCodeReview';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔍 正在进行AI代码审查...');
@@ -189,8 +200,12 @@ class AICodeReviewTask implements DAGTask {
 }
 
 // 🚀 AI性能优化建议任务
-class AIPerformanceOptimizerTask implements DAGTask {
+class AIPerformanceOptimizerTask extends DAGTask {
   name = 'aiPerformanceOptimizer';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🚀 正在生成AI性能优化建议...');
@@ -224,8 +239,12 @@ class AIPerformanceOptimizerTask implements DAGTask {
 }
 
 // 🧪 AI测试用例生成任务
-class AITestGeneratorTask implements DAGTask {
+class AITestGeneratorTask extends DAGTask {
   name = 'aiTestGenerator';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🧪 正在使用AI生成测试用例...');
@@ -255,8 +274,12 @@ class AITestGeneratorTask implements DAGTask {
 }
 
 // 📊 AI综合报告生成任务
-class AIReportGeneratorTask implements DAGTask {
+class AIReportGeneratorTask extends DAGTask {
   name = 'aiReportGenerator';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📊 正在生成AI综合分析报告...');
@@ -383,7 +406,6 @@ async function runLLMIntegrationExample() {
     const result = await dynamicWorkflow.execute({
       projectPath: './src',
       analysisType: 'comprehensive',
-      llmModel: 'gpt-4-turbo',
     });
 
     const executionTime = Date.now() - startTime;
@@ -468,10 +490,12 @@ async function runLLMIntegrationExample() {
 
     // 注意：这里是模拟，实际使用需要真实的LLM API
     const simpleResult = await WorkflowBuilder.create()
-      .withLLMModel('gpt-4-turbo') // 模拟配置
-      .withDynamicPlanning(
-        '分析这个React项目，生成全面的质量报告，包括代码审查、性能优化建议和测试用例生成'
-      )
+      .withConfig({ maxDynamicSteps: 10 }) // 模拟配置
+      .addDynamicStrategy({
+        name: 'llm_planning_simulation',
+        condition: () => true,
+        generator: async () => [],
+      })
       .build()
       .execute({ projectPath: './src' });
 

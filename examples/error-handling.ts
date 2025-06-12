@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -16,10 +15,12 @@ import type { TaskInput } from '../src/workflow/Task';
  */
 
 // 🔥 可能失败的网络请求任务
-class NetworkRequestTask implements DAGTask {
+class NetworkRequestTask extends DAGTask {
   name = 'networkRequest';
 
-  constructor(private failureRate: number = 0.3) {}
+  constructor(private failureRate: number = 0.3, dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🌐 正在发起网络请求...');
@@ -44,10 +45,12 @@ class NetworkRequestTask implements DAGTask {
 }
 
 // ⏰ 超时任务
-class SlowProcessingTask implements DAGTask {
+class SlowProcessingTask extends DAGTask {
   name = 'slowProcessing';
 
-  constructor(private duration: number = 2000) {}
+  constructor(private duration: number = 2000, dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('⏳ 正在执行耗时处理...');
@@ -67,10 +70,15 @@ class SlowProcessingTask implements DAGTask {
 }
 
 // 💾 数据库操作任务
-class DatabaseOperationTask implements DAGTask {
+class DatabaseOperationTask extends DAGTask {
   name = 'databaseOperation';
 
-  constructor(private shouldFail: boolean = false) {}
+  constructor(
+    private shouldFail: boolean = false,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('💾 正在执行数据库操作...');
@@ -93,11 +101,13 @@ class DatabaseOperationTask implements DAGTask {
 }
 
 // 🔄 重试任务
-class RetryableTask implements DAGTask {
+class RetryableTask extends DAGTask {
   name = 'retryableTask';
   private attemptCount = 0;
 
-  constructor(private maxAttempts: number = 3) {}
+  constructor(private maxAttempts: number = 3, dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     this.attemptCount++;
@@ -122,8 +132,12 @@ class RetryableTask implements DAGTask {
 }
 
 // 🚨 紧急备用任务
-class FallbackTask implements DAGTask {
+class FallbackTask extends DAGTask {
   name = 'fallbackTask';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🚨 执行备用方案...');
@@ -142,8 +156,12 @@ class FallbackTask implements DAGTask {
 }
 
 // 🔧 错误恢复任务
-class ErrorRecoveryTask implements DAGTask {
+class ErrorRecoveryTask extends DAGTask {
   name = 'errorRecovery';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔧 正在执行错误恢复...');
@@ -170,8 +188,12 @@ class ErrorRecoveryTask implements DAGTask {
 }
 
 // 📊 健康检查任务
-class HealthCheckTask implements DAGTask {
+class HealthCheckTask extends DAGTask {
   name = 'healthCheck';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📊 正在执行系统健康检查...');
@@ -198,8 +220,12 @@ class HealthCheckTask implements DAGTask {
 }
 
 // 📝 错误日志任务
-class ErrorLoggingTask implements DAGTask {
+class ErrorLoggingTask extends DAGTask {
   name = 'errorLogging';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📝 正在记录错误日志...');

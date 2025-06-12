@@ -1,15 +1,17 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { WorkflowBuilder, type DAGTask } from '../WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../WorkflowBuilder';
 import { TaskRegistry } from '../TaskRegistry';
 import type { TaskInput } from '../Task';
 
 // 实际任务实现
-class TestTask implements DAGTask {
+class TestTask extends DAGTask {
   constructor(
     public name: string,
     private outputData: Record<string, any> = {},
-    public dependsOn?: DAGTask[]
-  ) {}
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     // 模拟异步处理

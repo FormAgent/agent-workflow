@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -15,8 +14,12 @@ import type { TaskInput } from '../src/workflow/Task';
  */
 
 // 🔍 项目扫描任务
-class ProjectScanTask implements DAGTask {
+class ProjectScanTask extends DAGTask {
   name = 'projectScan';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔍 正在扫描项目结构...');
@@ -44,8 +47,12 @@ class ProjectScanTask implements DAGTask {
 }
 
 // 🔧 TypeScript检查任务
-class TypeScriptCheckTask implements DAGTask {
+class TypeScriptCheckTask extends DAGTask {
   name = 'typeScriptCheck';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔧 正在进行TypeScript类型检查...');
@@ -65,8 +72,12 @@ class TypeScriptCheckTask implements DAGTask {
 }
 
 // 🧪 测试任务
-class TestRunnerTask implements DAGTask {
+class TestRunnerTask extends DAGTask {
   name = 'testRunner';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🧪 正在运行测试...');
@@ -87,8 +98,12 @@ class TestRunnerTask implements DAGTask {
 }
 
 // 🔒 安全审计任务
-class SecurityAuditTask implements DAGTask {
+class SecurityAuditTask extends DAGTask {
   name = 'securityAudit';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔒 正在进行安全审计...');
@@ -116,8 +131,12 @@ class SecurityAuditTask implements DAGTask {
 }
 
 // 🚀 性能优化任务
-class PerformanceOptimizationTask implements DAGTask {
+class PerformanceOptimizationTask extends DAGTask {
   name = 'performanceOptimization';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🚀 正在进行性能优化分析...');
@@ -137,8 +156,12 @@ class PerformanceOptimizationTask implements DAGTask {
 }
 
 // 📊 代码质量分析任务
-class CodeQualityTask implements DAGTask {
+class CodeQualityTask extends DAGTask {
   name = 'codeQuality';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📊 正在分析代码质量...');
@@ -159,8 +182,12 @@ class CodeQualityTask implements DAGTask {
 }
 
 // 🔧 重构建议任务
-class RefactorSuggestionTask implements DAGTask {
+class RefactorSuggestionTask extends DAGTask {
   name = 'refactorSuggestion';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('🔧 正在生成重构建议...');
@@ -180,8 +207,12 @@ class RefactorSuggestionTask implements DAGTask {
 }
 
 // 📝 测试生成任务
-class TestGenerationTask implements DAGTask {
+class TestGenerationTask extends DAGTask {
   name = 'testGeneration';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log('📝 正在生成测试用例...');

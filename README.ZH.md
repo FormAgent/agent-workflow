@@ -42,16 +42,24 @@ pnpm add agent-workflow
 import { WorkflowBuilder } from 'agent-workflow';
 
 // 定义任务
-class DataProcessTask implements DAGTask {
+class DataProcessTask extends DAGTask {
   name = 'dataProcess';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const processed = input.rawData.toUpperCase();
     return { ...input, processed };
   }
 }
 
-class AnalysisTask implements DAGTask {
+class AnalysisTask extends DAGTask {
   name = 'analysis';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const analysis = `分析结果: ${input.processed}`;
     return { ...input, analysis };
@@ -120,11 +128,17 @@ const workflow = WorkflowBuilder
 ### LLM驱动的智能工作流
 
 ```typescript
-// 🤖 AI自动规划任务流程
+// 🤖 基于策略的工作流规划
 const result = await WorkflowBuilder
   .create()
-  .withLLMModel('gpt-4-turbo')
-  .withDynamicPlanning('分析这个Vue项目，生成代码质量报告')
+  .addDynamicStrategy({
+    name: 'project_analysis',
+    condition: () => true,
+    generator: async (value, context) => {
+      // 根据项目类型生成分析任务
+      return []; // 基于分析返回任务
+    }
+  })
   .build()
   .execute({ projectPath: './my-vue-app' });
 
@@ -139,7 +153,6 @@ console.log('AI自动生成的分析报告:', result.data);
 const workflow = WorkflowBuilder
   .create()
   .withConfig({
-    llmModel: 'gpt-4-turbo',
     retryAttempts: 3,
     timeoutMs: 60000,
     maxDynamicSteps: 20
@@ -486,13 +499,15 @@ history.forEach(record => {
 ### 1. 任务设计原则
 
 ```typescript
-class WellDesignedTask implements DAGTask {
+class WellDesignedTask extends DAGTask {
   constructor(
     public name: string,
     private config: TaskConfig
-  ) {}
+  ) {
+    super([]);
+}
 
-  async execute(input: TaskInput): Promise<Record<string, any>> {
+  async executeasync execute(input: TaskInput): Promise<Record<string, any>> {
     // ✅ 输入验证
     this.validateInput(input);
     
@@ -843,7 +858,7 @@ interface StreamingChunk {
 
 ```typescript
 // 🔥 AI SDK 兼容的流式任务
-class AICodeAnalysisTask implements DAGTask {
+class AICodeAnalysisTask extends DAGTask {
   name = 'aiCodeAnalysis';
   isAISDKStreaming = true;
 
@@ -987,7 +1002,7 @@ const output = await Runner.runSync({
 
 ```typescript
 // 🧠 AI规划器分析请求并生成工作流
-class AIPlannerTask implements DAGTask {
+class AIPlannerTask extends DAGTask {
   async execute(input: TaskInput) {
     const userRequest = input.userRequest;
     

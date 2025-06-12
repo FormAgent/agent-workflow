@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -69,6 +68,7 @@ class Agent {
 
     return {
       name: this.name.replace(/\s+/g, ''),
+      dependsOn: [],
       async execute(input: TaskInput): Promise<Record<string, any>> {
         console.log(`\n🤖 Agent [${agent.name}] 开始处理请求`);
         console.log(`📋 指令: ${agent.instructions}`);

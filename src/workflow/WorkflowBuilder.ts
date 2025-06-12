@@ -1,17 +1,20 @@
-import { z } from 'zod';
-import type { Task, TaskInput } from './Task';
-import { TaskRegistry } from './TaskRegistry';
+import type { TaskInput } from './Task';
 import { ContextManager } from './ContextManager';
 
-// DAG任务接口定义
-export interface DAGTask {
-  name: string;
-  dependsOn?: DAGTask[];
-  execute(input: TaskInput): Promise<Record<string, any>>;
+// DAG任务抽象基类定义 - 确保依赖关系一致性
+export abstract class DAGTask {
+  abstract name: string;
+  public dependsOn: DAGTask[] = [];
+
+  constructor(dependencies: DAGTask[] = []) {
+    this.dependsOn = dependencies;
+  }
+
+  abstract execute(input: TaskInput): Promise<Record<string, any>>;
 }
 
-// 🔄 流式DAG任务接口（扩展）
-export interface StreamingDAGTask extends DAGTask {
+// 🔄 流式DAG任务抽象类（扩展）
+export abstract class StreamingDAGTask extends DAGTask {
   executeStream?(
     input: TaskInput
   ): AsyncGenerator<StreamChunk, Record<string, any>, unknown>;
@@ -36,8 +39,6 @@ export interface StreamingWorkflowResult {
 
 // 核心配置接口
 export interface WorkflowConfig {
-  llmModel?: string;
-  enableDynamicPlanning?: boolean;
   enableStreaming?: boolean;
   retryAttempts?: number;
   timeoutMs?: number;
@@ -85,8 +86,8 @@ export interface DynamicStrategy {
   once?: boolean;
 }
 
-// 🤖 AI SDK 兼容的流式任务接口
-export interface AISDKStreamingTask extends DAGTask {
+// 🤖 AI SDK 兼容的流式任务抽象类
+export abstract class AISDKStreamingTask extends DAGTask {
   executeStreamAI?(input: TaskInput): Promise<{
     textStream?: AsyncIterable<string>;
     fullStream?: AsyncIterable<any>;
@@ -109,9 +110,13 @@ export interface AISDKStreamingWorkflowResult {
 export class WorkflowBuilder {
   private config: WorkflowConfig = {};
   private staticTasks: DAGTask[] = [];
-  private dynamicPrompt?: string;
+
   private dynamicStrategies: DynamicStrategy[] = [];
 
+  // 🔒 私有构造函数 - 防止直接实例化
+  private constructor() {}
+
+  // 🏭 工厂方法 - 唯一创建实例的方式
   static create(): WorkflowBuilder {
     return new WorkflowBuilder();
   }
@@ -119,11 +124,6 @@ export class WorkflowBuilder {
   // 配置方法
   withConfig(config: Partial<WorkflowConfig>): this {
     this.config = { ...this.config, ...config };
-    return this;
-  }
-
-  withLLMModel(model: string): this {
-    this.config.llmModel = model;
     return this;
   }
 
@@ -148,13 +148,6 @@ export class WorkflowBuilder {
     return this;
   }
 
-  // 动态任务规划
-  withDynamicPlanning(prompt: string): this {
-    this.config.enableDynamicPlanning = true;
-    this.dynamicPrompt = prompt;
-    return this;
-  }
-
   // 添加动态策略
   addDynamicStrategy(strategy: DynamicStrategy): this {
     this.dynamicStrategies.push(strategy);
@@ -169,11 +162,11 @@ export class WorkflowBuilder {
     return this.addDynamicStrategy({
       name: `condition-${this.dynamicStrategies.length}`,
       condition: (context) => {
-        // 等待所有当前任务完成后再检查条件
+        // Wait for all current tasks to complete before checking conditions
         const history = context.getExecutionHistory();
         const completedTasks = history.filter((h) => h.status === 'completed');
 
-        // 如果有已完成的任务，检查条件
+        // If there are completed tasks, check the condition
         if (completedTasks.length > 0) {
           return condition(context);
         }
@@ -217,7 +210,7 @@ export class WorkflowBuilder {
     return this.addDynamicStrategy({
       name: `on-context-${contextKey}`,
       condition: (context) => {
-        // 检查是否有新的上下文值，并且之前没有触发过
+        // Check if there's a new context value that hasn't been triggered before
         const value = context.get(contextKey);
         return value !== undefined;
       },
@@ -231,11 +224,6 @@ export class WorkflowBuilder {
 
   // 构建工作流实例
   build(): Workflow {
-    // 注意：LLM动态规划功能暂时禁用，因为依赖的LLMTaskPlanner已被移除
-    if (this.config.enableDynamicPlanning && this.dynamicPrompt) {
-      console.warn('LLM动态规划功能暂时不可用，将使用策略模式。');
-    }
-
     if (this.dynamicStrategies.length > 0) {
       return new StrategyBasedWorkflow(
         this.config,
@@ -441,12 +429,12 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
     this.startTime = Date.now();
 
     try {
-      // 设置初始输入
+      // Set initial input
       Object.entries(input).forEach(([key, value]) => {
         this.context.set(key, value);
       });
 
-      // 执行DAG任务
+      // Execute DAG tasks
       await this.executeDAG();
 
       return {
@@ -471,12 +459,12 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
     let lastError: Error | undefined;
 
     for (const level of levels) {
-      // 执行当前级别的所有任务，不因单个任务失败而停止
+      // Execute all tasks at the current level, don't stop due to individual task failures
       const results = await Promise.allSettled(
         level.map((task) => this.executeTask(task))
       );
 
-      // 检查是否有失败的任务
+      // Check for failed tasks
       for (const result of results) {
         if (result.status === 'rejected') {
           hasError = true;
@@ -485,24 +473,24 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
       }
     }
 
-    // 如果有任务失败，抛出最后一个错误
+    // If any tasks failed, throw the last error
     if (hasError && lastError) {
       throw lastError;
     }
   }
 
   protected computeExecutionLevels(): DAGTask[][] {
-    // 高效的拓扑排序实现
+    // Efficient topological sorting implementation
     const graph = new Map<DAGTask, DAGTask[]>();
     const inDegree = new Map<DAGTask, number>();
 
-    // 初始化
+    // Initialize
     for (const task of this.tasks) {
       graph.set(task, []);
       inDegree.set(task, 0);
     }
 
-    // 构建依赖图
+    // Build dependency graph
     for (const task of this.tasks) {
       if (task.dependsOn) {
         for (const dep of task.dependsOn) {
@@ -512,7 +500,7 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
       }
     }
 
-    // 分层执行
+    // Layered execution
     const levels: DAGTask[][] = [];
     const queue = this.tasks.filter((task) => inDegree.get(task) === 0);
     let processedCount = 0;
@@ -534,9 +522,11 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
       }
     }
 
-    // 检测循环依赖
+    // Detect circular dependencies
     if (processedCount < this.tasks.length) {
-      throw new Error('检测到循环依赖，无法执行工作流');
+      throw new Error(
+        'Circular dependency detected, unable to execute workflow'
+      );
     }
 
     return levels;
@@ -568,23 +558,23 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
     this.usedStrategies.clear();
 
     try {
-      // 设置初始输入
+      // Set initial input
       Object.entries(input).forEach(([key, value]) => {
         this.context.set(key, value);
       });
 
-      // 动态执行循环
+      // Dynamic execution loop
       while (this.hasTasksToExecute() && this.shouldContinue()) {
         this.currentStep++;
 
-        // 执行当前批次的任务
+        // Execute current batch of tasks
         await this.executeCurrentBatch();
 
-        // 评估策略并生成新任务
+        // Evaluate strategies and generate new tasks
         await this.evaluateStrategiesAndGenerateTasks();
       }
 
-      // 检查是否因为循环依赖而无法继续
+      // Check if unable to continue due to circular dependencies
       if (!this.hasTasksToExecute() && this.shouldContinue()) {
         const processedTaskNames = new Set(
           this.context
@@ -603,7 +593,9 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
         );
 
         if (unprocessedTasks.length > 0) {
-          throw new Error('检测到循环依赖，无法执行工作流');
+          throw new Error(
+            'Circular dependency detected, unable to execute workflow'
+          );
         }
       }
 
@@ -642,15 +634,15 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
 
     if (readyTasks.length === 0) return;
 
-    // 并行执行就绪任务，不因单个任务失败而停止
+    // Execute ready tasks in parallel, don't stop due to individual task failures
     const results = await Promise.allSettled(
       readyTasks.map((task) => this.executeTask(task))
     );
 
-    // 记录失败的任务但继续执行
+    // Log failed tasks but continue execution
     for (const result of results) {
       if (result.status === 'rejected') {
-        console.warn('任务执行失败:', result.reason);
+        console.warn('Task execution failed:', result.reason);
       }
     }
   }
@@ -669,12 +661,12 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
     );
 
     return this.tasks.filter((task) => {
-      // 检查是否已处理（完成、失败或跳过）
+      // Check if already processed (completed, failed, or skipped)
       if (processedTaskNames.has(task.name || '')) {
         return false;
       }
 
-      // 检查依赖是否满足（只要依赖任务被处理过即可，不管成功失败）
+      // Check if dependencies are satisfied (as long as dependency tasks have been processed, regardless of success/failure)
       if (task.dependsOn) {
         return task.dependsOn.every((dep) =>
           processedTaskNames.has(dep.name || '')
@@ -686,13 +678,13 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
   }
 
   protected async evaluateStrategiesAndGenerateTasks(): Promise<void> {
-    // 按优先级排序策略
+    // Sort strategies by priority
     const sortedStrategies = [...this.strategies].sort(
       (a, b) => (b.priority || 0) - (a.priority || 0)
     );
 
     for (const strategy of sortedStrategies) {
-      // 跳过已使用的一次性策略
+      // Skip already used one-time strategies
       if (strategy.once && this.usedStrategies.has(strategy.name)) {
         continue;
       }
@@ -712,12 +704,12 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
             }
 
             console.log(
-              `🎯 策略 "${strategy.name}" 生成了 ${newTasks.length} 个新任务`
+              `🎯 Strategy "${strategy.name}" generated ${newTasks.length} new tasks`
             );
           }
         }
       } catch (error) {
-        console.error(`策略 "${strategy.name}" 执行失败:`, error);
+        console.error(`Strategy "${strategy.name}" execution failed:`, error);
       }
     }
   }
@@ -731,20 +723,20 @@ class StreamingStaticWorkflow
   private streamResult: WorkflowResult | undefined;
 
   executeStream(input: TaskInput = {}): StreamingWorkflowResult {
-    this.streamResult = undefined; // 重置
+    this.streamResult = undefined; // Reset
     const stream = this.createExecutionStream(input);
 
     const resultPromise = (async (): Promise<WorkflowResult> => {
-      // 消费流直到完成，生成器会设置streamResult
+      // Consume stream until completion, generator will set streamResult
       for await (const chunk of stream) {
-        // 流处理
+        // Stream processing
       }
 
-      // 返回流式执行的结果
+      // Return streaming execution result
       return (
         this.streamResult || {
           success: false,
-          error: new Error('流式执行未完成'),
+          error: new Error('Streaming execution not completed'),
           executionTime: 0,
           taskResults: new Map(),
         }
@@ -763,7 +755,7 @@ class StreamingStaticWorkflow
     this.startTime = Date.now();
 
     try {
-      // 设置初始输入
+      // Set initial input
       Object.entries(input).forEach(([key, value]) => {
         this.context.set(key, value);
       });
@@ -771,12 +763,12 @@ class StreamingStaticWorkflow
       yield {
         type: 'progress',
         taskName: 'workflow',
-        content: '工作流开始执行',
+        content: 'Workflow execution started',
         progress: 0,
         timestamp: Date.now(),
       };
 
-      // 执行DAG任务并流式输出
+      // Execute DAG tasks with streaming output
       yield* this.executeDAGStream();
 
       const result: WorkflowResult = {
@@ -786,13 +778,13 @@ class StreamingStaticWorkflow
         taskResults: this.taskResults,
       };
 
-      // 保存结果供getResult使用
+      // Save result for getResult usage
       this.streamResult = result;
 
       yield {
         type: 'complete',
         taskName: 'workflow',
-        content: '工作流执行完成',
+        content: 'Workflow execution completed',
         progress: 100,
         timestamp: Date.now(),
       };
@@ -806,7 +798,7 @@ class StreamingStaticWorkflow
         taskResults: this.taskResults,
       };
 
-      // 保存错误结果
+      // Save error result
       this.streamResult = errorResult;
 
       yield {
@@ -830,7 +822,7 @@ class StreamingStaticWorkflow
     let completedTasks = 0;
 
     for (const level of levels) {
-      // 执行当前级别的所有任务
+      // Execute all tasks at the current level
       const taskPromises = level.map((task) => this.executeTaskStream(task));
 
       for await (const taskStream of taskPromises) {
@@ -841,7 +833,7 @@ class StreamingStaticWorkflow
             yield {
               type: 'progress',
               taskName: 'workflow',
-              content: `已完成 ${completedTasks}/${totalTasks} 个任务`,
+              content: `Completed ${completedTasks}/${totalTasks} tasks`,
               progress: Math.round((completedTasks / totalTasks) * 100),
               timestamp: Date.now(),
             };
@@ -860,7 +852,7 @@ class StreamingStaticWorkflow
       yield {
         type: 'progress',
         taskName: task.name,
-        content: `开始执行任务: ${task.name}`,
+        content: `Starting task execution: ${task.name}`,
         progress: 0,
         timestamp: Date.now(),
       };
@@ -868,34 +860,34 @@ class StreamingStaticWorkflow
       const input = this.context.getAll();
       let output: Record<string, any>;
 
-      // 检查是否是流式任务
+      // Check if it's a streaming task
       if (task.isStreaming && task.executeStream) {
         const generator = task.executeStream(input);
         let finalResult: Record<string, any> = {};
 
         try {
-          // 迭代生成器并产出所有中间结果
+          // Iterate generator and yield all intermediate results
           while (true) {
             const { value, done } = await generator.next();
             if (done) {
               finalResult = value || {};
               break;
             }
-            // 产出流式数据
+            // Yield streaming data
             yield value;
           }
         } catch (error) {
-          // 流式任务执行过程中的错误
+          // Error during streaming task execution
           throw error;
         }
 
         output = finalResult;
       } else {
-        // 普通任务执行
+        // Regular task execution
         output = await task.execute(input);
       }
 
-      // 存储结果
+      // Store results
       const taskName = task.name || '';
       this.context.set(taskName, output);
 
@@ -903,7 +895,7 @@ class StreamingStaticWorkflow
         this.context.set(key, value);
       }
 
-      // 生成唯一的任务键
+      // Generate unique task key
       let uniqueKey = taskName;
       let counter = 1;
       while (this.taskResults.has(uniqueKey)) {
@@ -925,7 +917,7 @@ class StreamingStaticWorkflow
       yield {
         type: 'complete',
         taskName: task.name,
-        content: `任务完成: ${task.name}`,
+        content: `Task completed: ${task.name}`,
         progress: 100,
         timestamp: Date.now(),
         metadata: { duration: result.duration },
@@ -968,20 +960,20 @@ class StreamingStrategyBasedWorkflow
   private streamResult: WorkflowResult | undefined;
 
   executeStream(input: TaskInput = {}): StreamingWorkflowResult {
-    this.streamResult = undefined; // 重置
+    this.streamResult = undefined; // Reset
     const stream = this.createDynamicExecutionStream(input);
 
     const resultPromise = (async (): Promise<WorkflowResult> => {
-      // 消费流直到完成，生成器会设置streamResult
+      // Consume stream until completion, generator will set streamResult
       for await (const chunk of stream) {
-        // 流处理
+        // Stream processing
       }
 
-      // 返回流式执行的结果
+      // Return streaming execution result
       return (
         this.streamResult || {
           success: false,
-          error: new Error('流式执行未完成'),
+          error: new Error('Streaming execution not completed'),
           executionTime: 0,
           taskResults: new Map(),
         }
@@ -1010,19 +1002,19 @@ class StreamingStrategyBasedWorkflow
       yield {
         type: 'progress',
         taskName: 'workflow',
-        content: '动态工作流开始执行',
+        content: 'Dynamic workflow execution started',
         progress: 0,
         timestamp: Date.now(),
       };
 
-      // 动态执行循环
+      // Dynamic execution loop
       while (this.hasTasksToExecute() && this.shouldContinue()) {
         this.currentStep++;
 
         yield {
           type: 'progress',
           taskName: 'workflow',
-          content: `执行第 ${this.currentStep} 步`,
+          content: `Executing step ${this.currentStep}`,
           progress: Math.min(
             (this.currentStep / (this.config.maxDynamicSteps || 50)) * 100,
             90
@@ -1030,20 +1022,20 @@ class StreamingStrategyBasedWorkflow
           timestamp: Date.now(),
         };
 
-        // 执行当前批次的任务
+        // Execute current batch of tasks
         const readyTasks = this.getReadyTasks();
         for (const task of readyTasks) {
           yield* this.executeTaskStreamForStrategy(task as StreamingDAGTask);
         }
 
-        // 评估策略并生成新任务
+        // Evaluate strategies and generate new tasks
         await this.evaluateStrategiesAndGenerateTasks();
 
         if (this.dynamicTasksGenerated > 0) {
           yield {
             type: 'data',
             taskName: 'strategy',
-            content: `动态生成了 ${this.dynamicTasksGenerated} 个新任务`,
+            content: `Dynamically generated ${this.dynamicTasksGenerated} new tasks`,
             timestamp: Date.now(),
           };
         }
@@ -1058,13 +1050,13 @@ class StreamingStrategyBasedWorkflow
         totalSteps: this.currentStep,
       };
 
-      // 保存结果供getResult使用
+      // Save result for getResult usage
       this.streamResult = result;
 
       yield {
         type: 'complete',
         taskName: 'workflow',
-        content: '动态工作流执行完成',
+        content: 'Dynamic workflow execution completed',
         progress: 100,
         timestamp: Date.now(),
       };
@@ -1080,7 +1072,7 @@ class StreamingStrategyBasedWorkflow
         totalSteps: this.currentStep,
       };
 
-      // 保存错误结果
+      // Save error result
       this.streamResult = errorResult;
 
       yield {
@@ -1103,7 +1095,7 @@ class StreamingStrategyBasedWorkflow
       yield {
         type: 'progress',
         taskName: task.name,
-        content: `开始执行动态任务: ${task.name}`,
+        content: `Starting dynamic task execution: ${task.name}`,
         progress: 0,
         timestamp: Date.now(),
       };
@@ -1111,34 +1103,34 @@ class StreamingStrategyBasedWorkflow
       const input = this.context.getAll();
       let output: Record<string, any>;
 
-      // 检查是否是流式任务
+      // Check if it's a streaming task
       if (task.isStreaming && task.executeStream) {
         const generator = task.executeStream(input);
         let finalResult: Record<string, any> = {};
 
         try {
-          // 迭代生成器并产出所有中间结果
+          // Iterate generator and yield all intermediate results
           while (true) {
             const { value, done } = await generator.next();
             if (done) {
               finalResult = value || {};
               break;
             }
-            // 产出流式数据
+            // Yield streaming data
             yield value;
           }
         } catch (error) {
-          // 流式任务执行过程中的错误
+          // Error during streaming task execution
           throw error;
         }
 
         output = finalResult;
       } else {
-        // 普通任务执行
+        // Regular task execution
         output = await task.execute(input);
       }
 
-      // 存储结果（与基类相同的逻辑）
+      // Store results (same logic as base class)
       const taskName = task.name || '';
       this.context.set(taskName, output);
 
@@ -1167,13 +1159,13 @@ class StreamingStrategyBasedWorkflow
       yield {
         type: 'complete',
         taskName: task.name,
-        content: `动态任务完成: ${task.name}`,
+        content: `Dynamic task completed: ${task.name}`,
         progress: 100,
         timestamp: Date.now(),
         metadata: { duration: result.duration },
       };
     } catch (error) {
-      console.warn('动态任务执行失败:', error);
+      console.warn('Dynamic task execution failed:', error);
 
       const taskName = task.name || '';
       let uniqueKey = taskName;

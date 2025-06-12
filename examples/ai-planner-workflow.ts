@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -15,8 +14,12 @@ import type { TaskInput } from '../src/workflow/Task';
  */
 
 // 🧠 AI Planner任务 - 规划后续工作流
-class AIPlannerTask implements DAGTask {
+class AIPlannerTask extends DAGTask {
   name = 'aiPlanner';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     const userRequest = input.userRequest || input.query || '';
@@ -182,10 +185,15 @@ class AIPlannerTask implements DAGTask {
 }
 
 // 🔍 文件操作任务
-class FileOperationTask implements DAGTask {
+class FileOperationTask extends DAGTask {
   name = 'fileOperation';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -226,10 +234,15 @@ class FileOperationTask implements DAGTask {
 }
 
 // 🔍 网络搜索任务
-class WebSearchTask implements DAGTask {
+class WebSearchTask extends DAGTask {
   name = 'webSearch';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -264,10 +277,15 @@ class WebSearchTask implements DAGTask {
 }
 
 // 💬 对话任务
-class ConversationalTask implements DAGTask {
+class ConversationalTask extends DAGTask {
   name = 'conversational';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -289,10 +307,15 @@ class ConversationalTask implements DAGTask {
 }
 
 // 💻 代码生成任务
-class CodeGenerationTask implements DAGTask {
+class CodeGenerationTask extends DAGTask {
   name = 'codeGeneration';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -317,10 +340,15 @@ class CodeGenerationTask implements DAGTask {
 }
 
 // 🔍 代码分析任务
-class CodeAnalysisTask implements DAGTask {
+class CodeAnalysisTask extends DAGTask {
   name = 'codeAnalysis';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -348,10 +376,15 @@ class CodeAnalysisTask implements DAGTask {
 }
 
 // 🛡️ 安全审计任务
-class SecurityAuditTask implements DAGTask {
+class SecurityAuditTask extends DAGTask {
   name = 'securityAudit';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 
@@ -374,10 +407,15 @@ class SecurityAuditTask implements DAGTask {
 }
 
 // ⚡ 性能优化任务
-class PerformanceOptimizationTask implements DAGTask {
+class PerformanceOptimizationTask extends DAGTask {
   name = 'performanceOpt';
 
-  constructor(private taskName: string, private config: any) {
+  constructor(
+    private taskName: string,
+    private config: any,
+    dependencies: DAGTask[] = []
+  ) {
+    super(dependencies);
     this.name = taskName;
   }
 

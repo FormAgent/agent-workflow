@@ -5,6 +5,7 @@ import type { TaskInput } from '../Task';
 // 🤖 模拟Agent类 - 类似OpenAI Agent SDK
 class MockAgent implements DAGTask {
   public name: string;
+  public dependsOn: DAGTask[] = [];
 
   constructor(
     name: string,

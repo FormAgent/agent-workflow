@@ -42,16 +42,24 @@ pnpm add agent-workflow
 import { WorkflowBuilder } from 'agent-workflow';
 
 // Define tasks
-class DataProcessTask implements DAGTask {
+class DataProcessTask extends DAGTask {
   name = 'dataProcess';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const processed = input.rawData.toUpperCase();
     return { ...input, processed };
   }
 }
 
-class AnalysisTask implements DAGTask {
+class AnalysisTask extends DAGTask {
   name = 'analysis';
+
+  constructor(dependencies: DAGTask[] = []) {
+    super(dependencies);
+  }
   async execute(input: TaskInput) {
     const analysis = `Analysis result: ${input.processed}`;
     return { ...input, analysis };
@@ -120,11 +128,17 @@ const workflow = WorkflowBuilder
 ### LLM-Driven Intelligent Workflow
 
 ```typescript
-// 🤖 AI automatically plans task flow
+// 🤖 Strategy-based workflow planning
 const result = await WorkflowBuilder
   .create()
-  .withLLMModel('gpt-4-turbo')
-  .withDynamicPlanning('Analyze this Vue project and generate a code quality report')
+  .addDynamicStrategy({
+    name: 'project_analysis',
+    condition: () => true,
+    generator: async (value, context) => {
+      // Generate analysis tasks based on project type
+      return []; // Return tasks based on analysis
+    }
+  })
   .build()
   .execute({ projectPath: './my-vue-app' });
 
@@ -337,7 +351,7 @@ Our workflow system provides **100% API compatibility** with [AI SDK](https://gi
 
 ```typescript
 // 🔥 AI SDK Compatible Streaming Tasks
-class AICodeAnalysisTask implements DAGTask {
+class AICodeAnalysisTask extends DAGTask {
   name = 'aiCodeAnalysis';
   isAISDKStreaming = true;
 
@@ -481,7 +495,7 @@ Our AI Planner can analyze user requests and automatically generate optimized wo
 
 ```typescript
 // 🧠 AI Planner analyzes requests and generates workflows
-class AIPlannerTask implements DAGTask {
+class AIPlannerTask extends DAGTask {
   async execute(input: TaskInput) {
     const userRequest = input.userRequest;
     
@@ -563,7 +577,6 @@ The AI Planner generates structured JSON workflows:
 const workflow = WorkflowBuilder
   .create()
   .withConfig({
-    llmModel: 'gpt-4-turbo',
     retryAttempts: 3,
     timeoutMs: 60000,
     maxDynamicSteps: 20
@@ -910,13 +923,15 @@ history.forEach(record => {
 ### 1. Task Design Principles
 
 ```typescript
-class WellDesignedTask implements DAGTask {
+class WellDesignedTask extends DAGTask {
   constructor(
     public name: string,
     private config: TaskConfig
-  ) {}
+  ) {
+    super([]);
+}
 
-  async execute(input: TaskInput): Promise<Record<string, any>> {
+  async executeasync execute(input: TaskInput): Promise<Record<string, any>> {
     // ✅ Input validation
     this.validateInput(input);
     

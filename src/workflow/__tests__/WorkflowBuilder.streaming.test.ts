@@ -14,7 +14,7 @@ class MockStreamingTask implements StreamingDAGTask {
     public name: string,
     private outputs: string[] = [],
     private finalOutput: Record<string, any> = {},
-    public dependsOn?: DAGTask[]
+    public dependsOn: DAGTask[] = []
   ) {}
 
   isStreaming = true;
@@ -45,7 +45,7 @@ class MockAISDKStreamingTask implements AISDKStreamingTask {
     public name: string,
     private textChunks: string[] = [],
     private finalData: Record<string, any> = {},
-    public dependsOn?: DAGTask[]
+    public dependsOn: DAGTask[] = []
   ) {}
 
   isAISDKStreaming = true;
@@ -143,7 +143,7 @@ class MockNormalTask implements DAGTask {
   constructor(
     public name: string,
     private output: Record<string, any> = {},
-    public dependsOn?: DAGTask[]
+    public dependsOn: DAGTask[] = []
   ) {}
 
   async execute(input: TaskInput): Promise<Record<string, any>> {

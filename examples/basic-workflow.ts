@@ -1,7 +1,6 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder } from '../src/workflow/WorkflowBuilder';
-import type { DAGTask } from '../src/workflow/WorkflowBuilder';
+import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
 import type { TaskInput } from '../src/workflow/Task';
 
 /**
@@ -14,7 +13,7 @@ import type { TaskInput } from '../src/workflow/Task';
  */
 
 // 📝 定义数据处理任务
-class DataFetchTask implements DAGTask {
+class DataFetchTask extends DAGTask {
   name = 'dataFetch';
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
@@ -36,12 +35,11 @@ class DataFetchTask implements DAGTask {
 }
 
 // 🔍 数据验证任务
-class DataValidationTask implements DAGTask {
+class DataValidationTask extends DAGTask {
   name = 'dataValidation';
-  dependsOn?: DAGTask[];
 
   constructor(dependencies: DAGTask[] = []) {
-    this.dependsOn = dependencies;
+    super(dependencies);
   }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
@@ -71,12 +69,11 @@ class DataValidationTask implements DAGTask {
 }
 
 // 📊 数据分析任务
-class DataAnalysisTask implements DAGTask {
+class DataAnalysisTask extends DAGTask {
   name = 'dataAnalysis';
-  dependsOn?: DAGTask[];
 
   constructor(dependencies: DAGTask[] = []) {
-    this.dependsOn = dependencies;
+    super(dependencies);
   }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
@@ -110,12 +107,11 @@ class DataAnalysisTask implements DAGTask {
 }
 
 // 📋 报告生成任务
-class ReportGenerationTask implements DAGTask {
+class ReportGenerationTask extends DAGTask {
   name = 'reportGeneration';
-  dependsOn?: DAGTask[];
 
   constructor(dependencies: DAGTask[] = []) {
-    this.dependsOn = dependencies;
+    super(dependencies);
   }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {

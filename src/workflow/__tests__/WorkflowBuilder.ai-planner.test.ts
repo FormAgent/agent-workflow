@@ -5,6 +5,7 @@ import type { TaskInput } from '../Task';
 // 🧠 模拟AI规划器任务
 class MockAIPlannerTask implements DAGTask {
   name = 'aiPlanner';
+  dependsOn: DAGTask[] = [];
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     const userRequest = input.userRequest || input.query || '';
@@ -256,7 +257,7 @@ class MockExecutableTask implements DAGTask {
     public name: string,
     private taskType: string,
     private config: any = {},
-    public dependsOn?: DAGTask[]
+    public dependsOn: DAGTask[] = []
   ) {}
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
@@ -688,7 +689,7 @@ describe('WorkflowBuilder AI规划器测试', () => {
 
       // 应该检测到循环依赖并失败
       expect(result.success).toBe(false);
-      expect(result.error?.message).toContain('循环依赖');
+      expect(result.error?.message).toContain('Circular dependency');
     });
 
     it('应该限制AI生成的任务数量', async () => {
