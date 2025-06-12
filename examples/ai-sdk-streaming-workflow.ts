@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 
+import type { TaskInput } from "../src/workflow/Task";
 import {
-  WorkflowBuilder,
-  DAGTask,
   type AISDKStreamingTask,
-} from '../src/workflow/WorkflowBuilder';
-import type { TaskInput } from '../src/workflow/Task';
+  DAGTask,
+  WorkflowBuilder,
+} from "../src/workflow/WorkflowBuilder";
 
 /**
  * 🤖 AI SDK 兼容的流式工作流示例
@@ -24,36 +24,36 @@ class MockStreamTextResult {
   async *textStream(): AsyncIterable<string> {
     const responses = [
       `开始分析：${this.prompt}`,
-      '检测项目结构...',
-      '发现TypeScript配置',
-      '分析依赖关系...',
-      '生成代码质量报告:',
-      '- 整体质量: 良好',
-      '- 测试覆盖率: 75%',
-      '- 代码重复率: 3%',
-      '建议优化点:',
-      '1. 增加单元测试',
-      '2. 重构重复代码',
-      '3. 添加类型注释',
-      '分析完成。',
+      "检测项目结构...",
+      "发现TypeScript配置",
+      "分析依赖关系...",
+      "生成代码质量报告:",
+      "- 整体质量: 良好",
+      "- 测试覆盖率: 75%",
+      "- 代码重复率: 3%",
+      "建议优化点:",
+      "1. 增加单元测试",
+      "2. 重构重复代码",
+      "3. 添加类型注释",
+      "分析完成。",
     ];
 
     for (const response of responses) {
-      yield response + '\n';
+      yield response + "\n";
       await new Promise((resolve) => setTimeout(resolve, 200)); // 模拟流式延迟
     }
   }
 
   async *fullStream(): AsyncIterable<any> {
-    yield { type: 'text-delta', content: `开始分析：${this.prompt}` };
-    yield { type: 'text-delta', content: '检测项目结构...' };
-    yield { type: 'text-delta', content: '发现TypeScript配置' };
-    yield { type: 'tool-call', name: 'codeAnalyzer', args: { path: './src' } };
-    yield { type: 'tool-result', result: { files: 45, complexity: 'medium' } };
-    yield { type: 'text-delta', content: '生成代码质量报告:' };
-    yield { type: 'text-delta', content: '- 整体质量: 良好' };
+    yield { type: "text-delta", content: `开始分析：${this.prompt}` };
+    yield { type: "text-delta", content: "检测项目结构..." };
+    yield { type: "text-delta", content: "发现TypeScript配置" };
+    yield { type: "tool-call", name: "codeAnalyzer", args: { path: "./src" } };
+    yield { type: "tool-result", result: { files: 45, complexity: "medium" } };
+    yield { type: "text-delta", content: "生成代码质量报告:" };
+    yield { type: "text-delta", content: "- 整体质量: 良好" };
     yield {
-      type: 'finish',
+      type: "finish",
       usage: { prompt_tokens: 150, completion_tokens: 200 },
     };
   }
@@ -78,9 +78,9 @@ class MockStreamTextResult {
 
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
       },
     });
   }
@@ -106,7 +106,7 @@ class MockStreamTextResult {
 
 // 🤖 AI SDK 兼容的代码分析任务
 class AICodeAnalysisTask extends DAGTask implements AISDKStreamingTask {
-  name = 'aiCodeAnalysis';
+  name = "aiCodeAnalysis";
   isAISDKStreaming = true;
 
   constructor(dependencies: DAGTask[] = []) {
@@ -117,13 +117,13 @@ class AICodeAnalysisTask extends DAGTask implements AISDKStreamingTask {
     // 普通执行方法（兼容性）
     return {
       ...input,
-      analysis: 'Code analysis completed',
+      analysis: "Code analysis completed",
       timestamp: Date.now(),
     };
   }
 
   async executeStreamAI(input: TaskInput) {
-    const prompt = `分析代码项目: ${input.projectPath || './src'}`;
+    const prompt = `分析代码项目: ${input.projectPath || "./src"}`;
     const streamResult = new MockStreamTextResult(prompt);
 
     return {
@@ -137,7 +137,7 @@ class AICodeAnalysisTask extends DAGTask implements AISDKStreamingTask {
 
 // 🤖 AI 文档生成任务
 class AIDocumentationTask extends DAGTask implements AISDKStreamingTask {
-  name = 'aiDocumentation';
+  name = "aiDocumentation";
   isAISDKStreaming = true;
 
   constructor(dependencies: DAGTask[] = []) {
@@ -147,13 +147,13 @@ class AIDocumentationTask extends DAGTask implements AISDKStreamingTask {
   async execute(input: TaskInput): Promise<Record<string, any>> {
     return {
       ...input,
-      documentation: 'Documentation generated',
+      documentation: "Documentation generated",
       timestamp: Date.now(),
     };
   }
 
   async executeStreamAI(input: TaskInput) {
-    const prompt = `为项目生成文档: ${input.projectPath || './src'}`;
+    const prompt = `为项目生成文档: ${input.projectPath || "./src"}`;
     const streamResult = new MockStreamTextResult(prompt);
 
     return {
@@ -167,7 +167,7 @@ class AIDocumentationTask extends DAGTask implements AISDKStreamingTask {
 
 // 📊 普通状态任务（用于对比）
 class StatusTask extends DAGTask implements AISDKStreamingTask {
-  name = 'statusTask';
+  name = "statusTask";
   isAISDKStreaming = false; // 不是AI流式任务
 
   constructor(dependencies: DAGTask[] = []) {
@@ -178,7 +178,7 @@ class StatusTask extends DAGTask implements AISDKStreamingTask {
     await new Promise((resolve) => setTimeout(resolve, 500));
     return {
       ...input,
-      status: 'Project setup completed',
+      status: "Project setup completed",
       timestamp: Date.now(),
     };
   }
@@ -186,7 +186,7 @@ class StatusTask extends DAGTask implements AISDKStreamingTask {
 
 // 🚀 主函数 - 运行AI SDK兼容的流式工作流示例
 async function runAISDKStreamingExample() {
-  console.log('🤖 AI SDK 兼容的流式工作流示例\n');
+  console.log("🤖 AI SDK 兼容的流式工作流示例\n");
 
   try {
     // 1. 创建AI SDK兼容的流式工作流
@@ -196,12 +196,12 @@ async function runAISDKStreamingExample() {
       .addTask(new AIDocumentationTask()) // AI流式任务
       .buildAISDKStreaming(); // 🔥 使用AI SDK兼容构建
 
-    console.log('🌊 方式1: 使用textStream - 纯文本流');
-    console.log('='.repeat(50));
+    console.log("🌊 方式1: 使用textStream - 纯文本流");
+    console.log("=".repeat(50));
 
     const streamResult = aiStreamingWorkflow.executeStreamAISDK({
-      projectPath: './my-awesome-project',
-      framework: 'typescript',
+      projectPath: "./my-awesome-project",
+      framework: "typescript",
     });
 
     // 消费文本流（类似AI SDK的textStream）
@@ -209,50 +209,50 @@ async function runAISDKStreamingExample() {
       process.stdout.write(textChunk);
     }
 
-    console.log('\n\n🔄 方式2: 使用fullStream - 结构化数据流');
-    console.log('='.repeat(50));
+    console.log("\n\n🔄 方式2: 使用fullStream - 结构化数据流");
+    console.log("=".repeat(50));
 
     const streamResult2 = aiStreamingWorkflow.executeStreamAISDK({
-      projectPath: './my-awesome-project',
-      framework: 'typescript',
+      projectPath: "./my-awesome-project",
+      framework: "typescript",
     });
 
     // 消费完整数据流（类似AI SDK的fullStream）
     for await (const dataChunk of streamResult2.fullStream) {
-      console.log('📦 数据块:', JSON.stringify(dataChunk, null, 2));
+      console.log("📦 数据块:", JSON.stringify(dataChunk, null, 2));
     }
 
-    console.log('\n\n📡 方式3: 获取ReadableStream - 直接返回给前端');
-    console.log('='.repeat(50));
+    console.log("\n\n📡 方式3: 获取ReadableStream - 直接返回给前端");
+    console.log("=".repeat(50));
 
     const streamResult3 = aiStreamingWorkflow.executeStreamAISDK({
-      projectPath: './my-awesome-project',
-      framework: 'typescript',
+      projectPath: "./my-awesome-project",
+      framework: "typescript",
     });
 
     // 获取ReadableStream（可以直接返回给前端）
     const readableStream = streamResult3.toReadableStream();
-    console.log('✅ ReadableStream 已创建，可以直接返回给前端');
-    console.log('   类型:', readableStream.constructor.name);
+    console.log("✅ ReadableStream 已创建，可以直接返回给前端");
+    console.log("   类型:", readableStream.constructor.name);
 
     // 获取DataStreamResponse（SSE格式）
     const dataStreamResponse = streamResult3.toDataStreamResponse();
-    console.log('✅ DataStreamResponse 已创建，可用于SSE');
-    console.log('   Status:', dataStreamResponse.status);
+    console.log("✅ DataStreamResponse 已创建，可用于SSE");
+    console.log("   Status:", dataStreamResponse.status);
     console.log(
-      '   Headers:',
-      Object.fromEntries(dataStreamResponse.headers.entries())
+      "   Headers:",
+      Object.fromEntries(dataStreamResponse.headers.entries()),
     );
 
     // 获取最终结果
     const finalResult = await streamResult3.getResult();
-    console.log('\n📊 最终工作流结果:');
-    console.log('   成功:', finalResult.success);
-    console.log('   执行时间:', finalResult.executionTime + 'ms');
-    console.log('   任务数量:', finalResult.taskResults.size);
+    console.log("\n📊 最终工作流结果:");
+    console.log("   成功:", finalResult.success);
+    console.log("   执行时间:", finalResult.executionTime + "ms");
+    console.log("   任务数量:", finalResult.taskResults.size);
 
-    console.log('\n🎯 Express 路由集成示例:');
-    console.log('='.repeat(50));
+    console.log("\n🎯 Express 路由集成示例:");
+    console.log("=".repeat(50));
 
     // 展示如何在Express中使用
     const expressExample = `
@@ -307,13 +307,13 @@ const handleAnalyze = async () => {
 
     console.log(expressExample);
   } catch (error) {
-    console.error('💥 AI SDK流式工作流执行异常:', error);
+    console.error("💥 AI SDK流式工作流执行异常:", error);
   }
 }
 
 // 🚀 运行示例
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🎯 本示例展示如何创建与AI SDK完全兼容的流式工作流\n');
+  console.log("🎯 本示例展示如何创建与AI SDK完全兼容的流式工作流\n");
   runAISDKStreamingExample().catch(console.error);
 }
 

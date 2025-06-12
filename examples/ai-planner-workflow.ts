@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { WorkflowBuilder, DAGTask } from '../src/workflow/WorkflowBuilder';
-import type { TaskInput } from '../src/workflow/Task';
+import type { TaskInput } from "../src/workflow/Task";
+import { DAGTask, WorkflowBuilder } from "../src/workflow/WorkflowBuilder";
 
 /**
  * 🧠 AI Planner 工作流示例
@@ -15,14 +15,14 @@ import type { TaskInput } from '../src/workflow/Task';
 
 // 🧠 AI Planner任务 - 规划后续工作流
 class AIPlannerTask extends DAGTask {
-  name = 'aiPlanner';
+  name = "aiPlanner";
 
   constructor(dependencies: DAGTask[] = []) {
     super(dependencies);
   }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
-    const userRequest = input.userRequest || input.query || '';
+    const userRequest = input.userRequest || input.query || "";
     console.log(`🧠 AI Planner 开始分析请求: "${userRequest}"`);
 
     // 模拟LLM分析延迟
@@ -31,7 +31,7 @@ class AIPlannerTask extends DAGTask {
     // 智能规划逻辑
     const workflowPlan = this.generateWorkflowPlan(userRequest);
 
-    console.log('📋 AI Planner 生成工作流计划:');
+    console.log("📋 AI Planner 生成工作流计划:");
     console.log(JSON.stringify(workflowPlan, null, 2));
 
     return {
@@ -47,92 +47,92 @@ class AIPlannerTask extends DAGTask {
     const request = userRequest.toLowerCase();
 
     // 分析用户请求并生成相应的工作流计划
-    if (request.includes('weather app') || request.includes('天气应用')) {
+    if (request.includes("weather app") || request.includes("天气应用")) {
       return {
-        description: 'AI-powered weather application development workflow',
+        description: "AI-powered weather application development workflow",
         staticTasks: [
           {
-            type: 'WebSearchTask',
-            name: 'weatherApiResearch',
+            type: "WebSearchTask",
+            name: "weatherApiResearch",
             config: {
-              query: 'best weather APIs 2024 free tier',
+              query: "best weather APIs 2024 free tier",
               maxResults: 5,
             },
           },
           {
-            type: 'FileOperationTask',
-            name: 'projectSetup',
+            type: "FileOperationTask",
+            name: "projectSetup",
             config: {
-              action: 'create',
-              structure: 'fastapi-project',
-              features: ['ai', 'weather', 'api'],
+              action: "create",
+              structure: "fastapi-project",
+              features: ["ai", "weather", "api"],
             },
           },
         ],
         dynamicStrategies: [
           {
-            type: 'onTaskComplete',
-            name: 'apiSelectionStrategy',
-            description: 'Choose weather API and generate integration code',
-            trigger: 'After weather API research completes',
+            type: "onTaskComplete",
+            name: "apiSelectionStrategy",
+            description: "Choose weather API and generate integration code",
+            trigger: "After weather API research completes",
             generateTasks: [
               {
-                type: 'CodeGenerationTask',
-                name: 'weatherService',
+                type: "CodeGenerationTask",
+                name: "weatherService",
                 config: {
-                  component: 'weather-service',
-                  framework: 'fastapi',
-                  integrations: ['openweathermap'],
+                  component: "weather-service",
+                  framework: "fastapi",
+                  integrations: ["openweathermap"],
                 },
               },
             ],
           },
         ],
       };
-    } else if (request.includes('react') && request.includes('analyze')) {
+    } else if (request.includes("react") && request.includes("analyze")) {
       return {
         description:
-          'Comprehensive React TypeScript project analysis and optimization',
+          "Comprehensive React TypeScript project analysis and optimization",
         staticTasks: [
           {
-            type: 'FileOperationTask',
-            name: 'projectScan',
+            type: "FileOperationTask",
+            name: "projectScan",
             config: {
-              action: 'scan',
-              pattern: '**/*.{ts,tsx,js,jsx,json}',
-              output: 'fileList',
+              action: "scan",
+              pattern: "**/*.{ts,tsx,js,jsx,json}",
+              output: "fileList",
             },
           },
           {
-            type: 'CodeAnalysisTask',
-            name: 'initialAnalysis',
+            type: "CodeAnalysisTask",
+            name: "initialAnalysis",
             config: {
-              framework: 'react',
-              language: 'typescript',
-              checks: ['quality', 'complexity', 'dependencies'],
+              framework: "react",
+              language: "typescript",
+              checks: ["quality", "complexity", "dependencies"],
             },
-            dependsOn: ['projectScan'],
+            dependsOn: ["projectScan"],
           },
         ],
         dynamicStrategies: [
           {
-            type: 'onTaskComplete',
-            name: 'analysisBasedOptimization',
+            type: "onTaskComplete",
+            name: "analysisBasedOptimization",
             description:
-              'Generate optimization tasks based on analysis results',
-            trigger: 'When initialAnalysis completes',
+              "Generate optimization tasks based on analysis results",
+            trigger: "When initialAnalysis completes",
             generateTasks: [
               {
-                type: 'SecurityAuditTask',
-                name: 'securityCheck',
-                condition: 'hasSecurityIssues',
-                config: { severity: 'medium' },
+                type: "SecurityAuditTask",
+                name: "securityCheck",
+                condition: "hasSecurityIssues",
+                config: { severity: "medium" },
               },
               {
-                type: 'PerformanceOptimizationTask',
-                name: 'performanceOpt',
-                condition: 'hasPerformanceIssues',
-                config: { targets: ['bundle', 'runtime'] },
+                type: "PerformanceOptimizationTask",
+                name: "performanceOpt",
+                condition: "hasPerformanceIssues",
+                config: { targets: ["bundle", "runtime"] },
               },
             ],
           },
@@ -141,19 +141,19 @@ class AIPlannerTask extends DAGTask {
     } else {
       // 默认通用分析流程
       return {
-        description: 'General project analysis and assistance workflow',
+        description: "General project analysis and assistance workflow",
         staticTasks: [
           {
-            type: 'ConversationalTask',
-            name: 'queryAnalysis',
+            type: "ConversationalTask",
+            name: "queryAnalysis",
             config: {
-              task: 'analyze user intent and requirements',
-              output: 'structured analysis',
+              task: "analyze user intent and requirements",
+              output: "structured analysis",
             },
           },
           {
-            type: 'WebSearchTask',
-            name: 'informationGathering',
+            type: "WebSearchTask",
+            name: "informationGathering",
             config: {
               query: userRequest,
               maxResults: 3,
@@ -162,18 +162,18 @@ class AIPlannerTask extends DAGTask {
         ],
         dynamicStrategies: [
           {
-            type: 'onTaskComplete',
-            name: 'adaptiveResponse',
+            type: "onTaskComplete",
+            name: "adaptiveResponse",
             description:
-              'Generate appropriate response tasks based on analysis',
-            trigger: 'After query analysis completes',
+              "Generate appropriate response tasks based on analysis",
+            trigger: "After query analysis completes",
             generateTasks: [
               {
-                type: 'ConversationalTask',
-                name: 'responseGeneration',
+                type: "ConversationalTask",
+                name: "responseGeneration",
                 config: {
-                  task: 'provide helpful response based on analysis',
-                  format: 'structured',
+                  task: "provide helpful response based on analysis",
+                  format: "structured",
                 },
               },
             ],
@@ -186,12 +186,12 @@ class AIPlannerTask extends DAGTask {
 
 // 🔍 文件操作任务
 class FileOperationTask extends DAGTask {
-  name = 'fileOperation';
+  name = "fileOperation";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -200,25 +200,25 @@ class FileOperationTask extends DAGTask {
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log(`📁 执行文件操作: ${this.config.action}`);
 
-    if (this.config.action === 'scan') {
+    if (this.config.action === "scan") {
       await new Promise((resolve) => setTimeout(resolve, 500));
       return {
         ...input,
         [this.name]: {
-          action: 'scan',
+          action: "scan",
           filesFound: 45,
-          fileTypes: ['ts', 'tsx', 'js', 'json'],
+          fileTypes: ["ts", "tsx", "js", "json"],
           pattern: this.config.pattern,
           completed: true,
         },
       };
-    } else if (this.config.action === 'create') {
+    } else if (this.config.action === "create") {
       await new Promise((resolve) => setTimeout(resolve, 800));
       return {
         ...input,
         [this.name]: {
-          action: 'create',
-          projectStructure: 'created',
+          action: "create",
+          projectStructure: "created",
           framework: this.config.structure,
           features: this.config.features,
           completed: true,
@@ -235,12 +235,12 @@ class FileOperationTask extends DAGTask {
 
 // 🔍 网络搜索任务
 class WebSearchTask extends DAGTask {
-  name = 'webSearch';
+  name = "webSearch";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -253,14 +253,14 @@ class WebSearchTask extends DAGTask {
 
     const mockResults = [
       {
-        title: 'OpenWeatherMap API - Free Weather Data',
-        url: 'https://openweathermap.org/api',
-        snippet: 'Get weather data for any location with our API...',
+        title: "OpenWeatherMap API - Free Weather Data",
+        url: "https://openweathermap.org/api",
+        snippet: "Get weather data for any location with our API...",
       },
       {
-        title: 'AccuWeather API Documentation',
-        url: 'https://developer.accuweather.com/',
-        snippet: 'Comprehensive weather forecasting API...',
+        title: "AccuWeather API Documentation",
+        url: "https://developer.accuweather.com/",
+        snippet: "Comprehensive weather forecasting API...",
       },
     ].slice(0, this.config.maxResults || 5);
 
@@ -278,12 +278,12 @@ class WebSearchTask extends DAGTask {
 
 // 💬 对话任务
 class ConversationalTask extends DAGTask {
-  name = 'conversational';
+  name = "conversational";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -298,8 +298,8 @@ class ConversationalTask extends DAGTask {
       ...input,
       [this.name]: {
         task: this.config.task,
-        response: '基于分析，我为您提供了详细的建议和解决方案。',
-        format: this.config.format || 'text',
+        response: "基于分析，我为您提供了详细的建议和解决方案。",
+        format: this.config.format || "text",
         completed: true,
       },
     };
@@ -308,12 +308,12 @@ class ConversationalTask extends DAGTask {
 
 // 💻 代码生成任务
 class CodeGenerationTask extends DAGTask {
-  name = 'codeGeneration';
+  name = "codeGeneration";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -321,7 +321,7 @@ class CodeGenerationTask extends DAGTask {
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log(
-      `💻 执行代码生成: ${this.config.component || this.config.feature}`
+      `💻 执行代码生成: ${this.config.component || this.config.feature}`,
     );
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -341,12 +341,12 @@ class CodeGenerationTask extends DAGTask {
 
 // 🔍 代码分析任务
 class CodeAnalysisTask extends DAGTask {
-  name = 'codeAnalysis';
+  name = "codeAnalysis";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -354,7 +354,7 @@ class CodeAnalysisTask extends DAGTask {
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
     console.log(
-      `🔍 执行代码分析: ${this.config.framework} ${this.config.language}`
+      `🔍 执行代码分析: ${this.config.framework} ${this.config.language}`,
     );
 
     await new Promise((resolve) => setTimeout(resolve, 900));
@@ -366,7 +366,7 @@ class CodeAnalysisTask extends DAGTask {
         language: this.config.language,
         quality: 8.2,
         complexity: 0.65,
-        issues: ['test-coverage', 'performance'],
+        issues: ["test-coverage", "performance"],
         hasSecurityIssues: false,
         hasPerformanceIssues: true,
         completed: true,
@@ -377,12 +377,12 @@ class CodeAnalysisTask extends DAGTask {
 
 // 🛡️ 安全审计任务
 class SecurityAuditTask extends DAGTask {
-  name = 'securityAudit';
+  name = "securityAudit";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
@@ -399,7 +399,7 @@ class SecurityAuditTask extends DAGTask {
         severity: this.config.severity,
         vulnerabilities: 0,
         score: 95,
-        recommendations: ['更新依赖包', '启用HTTPS'],
+        recommendations: ["更新依赖包", "启用HTTPS"],
         completed: true,
       },
     };
@@ -408,19 +408,19 @@ class SecurityAuditTask extends DAGTask {
 
 // ⚡ 性能优化任务
 class PerformanceOptimizationTask extends DAGTask {
-  name = 'performanceOpt';
+  name = "performanceOpt";
 
   constructor(
     private taskName: string,
     private config: any,
-    dependencies: DAGTask[] = []
+    dependencies: DAGTask[] = [],
   ) {
     super(dependencies);
     this.name = taskName;
   }
 
   async execute(input: TaskInput): Promise<Record<string, any>> {
-    console.log(`⚡ 执行性能优化: ${this.config.targets.join(', ')}`);
+    console.log(`⚡ 执行性能优化: ${this.config.targets.join(", ")}`);
 
     await new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -429,8 +429,8 @@ class PerformanceOptimizationTask extends DAGTask {
       [this.name]: {
         targets: this.config.targets,
         improvements: {
-          bundleSize: '-25%',
-          loadTime: '-30%',
+          bundleSize: "-25%",
+          loadTime: "-30%",
         },
         completed: true,
       },
@@ -441,7 +441,7 @@ class PerformanceOptimizationTask extends DAGTask {
 // 🏗️ 工作流执行器 - 根据Plan执行动态工作流
 class PlanExecutor {
   static async executePlan(plan: any, initialInput: TaskInput): Promise<any> {
-    console.log('🚀 开始执行AI规划的工作流');
+    console.log("🚀 开始执行AI规划的工作流");
 
     const workflow = WorkflowBuilder.create();
 
@@ -453,23 +453,23 @@ class PlanExecutor {
 
     // 添加动态策略
     for (const strategyDef of plan.dynamicStrategies || []) {
-      if (strategyDef.type === 'onTaskComplete') {
+      if (strategyDef.type === "onTaskComplete") {
         workflow.onTaskComplete(
-          strategyDef.trigger.split(' ').pop(),
+          strategyDef.trigger.split(" ").pop(),
           async (result, context) => {
             const tasks = [];
             for (const taskDef of strategyDef.generateTasks) {
               // 检查条件
               if (taskDef.condition) {
-                const analysisResult = context.get('initialAnalysis') as any;
+                const analysisResult = context.get("initialAnalysis") as any;
                 if (
-                  taskDef.condition === 'hasSecurityIssues' &&
+                  taskDef.condition === "hasSecurityIssues" &&
                   !analysisResult?.hasSecurityIssues
                 ) {
                   continue;
                 }
                 if (
-                  taskDef.condition === 'hasPerformanceIssues' &&
+                  taskDef.condition === "hasPerformanceIssues" &&
                   !analysisResult?.hasPerformanceIssues
                 ) {
                   continue;
@@ -478,9 +478,9 @@ class PlanExecutor {
               tasks.push(this.createTaskFromDefinition(taskDef));
             }
             return tasks;
-          }
+          },
         );
-      } else if (strategyDef.type === 'whenCondition') {
+      } else if (strategyDef.type === "whenCondition") {
         workflow.whenCondition(
           (context) => {
             // 根据策略定义检查条件
@@ -488,9 +488,9 @@ class PlanExecutor {
           },
           async (context) => {
             return strategyDef.generateTasks.map((taskDef: any) =>
-              this.createTaskFromDefinition(taskDef)
+              this.createTaskFromDefinition(taskDef),
             );
-          }
+          },
         );
       }
     }
@@ -502,19 +502,19 @@ class PlanExecutor {
 
   private static createTaskFromDefinition(taskDef: any): DAGTask {
     switch (taskDef.type) {
-      case 'FileOperationTask':
+      case "FileOperationTask":
         return new FileOperationTask(taskDef.name, taskDef.config);
-      case 'WebSearchTask':
+      case "WebSearchTask":
         return new WebSearchTask(taskDef.name, taskDef.config);
-      case 'ConversationalTask':
+      case "ConversationalTask":
         return new ConversationalTask(taskDef.name, taskDef.config);
-      case 'CodeGenerationTask':
+      case "CodeGenerationTask":
         return new CodeGenerationTask(taskDef.name, taskDef.config);
-      case 'CodeAnalysisTask':
+      case "CodeAnalysisTask":
         return new CodeAnalysisTask(taskDef.name, taskDef.config);
-      case 'SecurityAuditTask':
+      case "SecurityAuditTask":
         return new SecurityAuditTask(taskDef.name, taskDef.config);
-      case 'PerformanceOptimizationTask':
+      case "PerformanceOptimizationTask":
         return new PerformanceOptimizationTask(taskDef.name, taskDef.config);
       default:
         throw new Error(`未知的任务类型: ${taskDef.type}`);
@@ -524,28 +524,28 @@ class PlanExecutor {
 
 // 🚀 主函数 - 运行AI Planner工作流示例
 async function runAIPlannerExample() {
-  console.log('🧠 AI Planner 工作流示例\n');
+  console.log("🧠 AI Planner 工作流示例\n");
 
   try {
     // 测试1: React项目分析
-    console.log('='.repeat(60));
-    console.log('🧪 测试1: React TypeScript项目分析');
+    console.log("=".repeat(60));
+    console.log("🧪 测试1: React TypeScript项目分析");
 
     const plannerWorkflow = WorkflowBuilder.create()
       .addTask(new AIPlannerTask())
-      .onTaskComplete('aiPlanner', async (result, context) => {
-        console.log('\n🎯 AI Planner完成，开始执行规划的工作流...');
+      .onTaskComplete("aiPlanner", async (result, context) => {
+        console.log("\n🎯 AI Planner完成，开始执行规划的工作流...");
         const plan = result?.workflowPlan;
 
         if (plan) {
           // 在同一个工作流中继续执行规划的任务
           const plannedResult = await PlanExecutor.executePlan(
             plan,
-            context.getAll()
+            context.getAll(),
           );
           console.log(
-            '\n📊 规划工作流执行结果:',
-            plannedResult.success ? '成功' : '失败'
+            "\n📊 规划工作流执行结果:",
+            plannedResult.success ? "成功" : "失败",
           );
           return [];
         }
@@ -554,55 +554,55 @@ async function runAIPlannerExample() {
       .build();
 
     const result1 = await plannerWorkflow.execute({
-      userRequest: 'Analyze my React TypeScript project and optimize it',
+      userRequest: "Analyze my React TypeScript project and optimize it",
     });
 
-    console.log('\n📋 测试1结果:');
-    console.log(`✅ 执行状态: ${result1.success ? '成功' : '失败'}`);
+    console.log("\n📋 测试1结果:");
+    console.log(`✅ 执行状态: ${result1.success ? "成功" : "失败"}`);
     console.log(`⏱️  执行时间: ${result1.executionTime}ms`);
     console.log(`🎯 动态任务: ${result1.dynamicTasksGenerated || 0}`);
 
     // 测试2: 天气应用开发
-    console.log('\n' + '='.repeat(60));
-    console.log('🧪 测试2: AI驱动的天气应用开发');
+    console.log("\n" + "=".repeat(60));
+    console.log("🧪 测试2: AI驱动的天气应用开发");
 
     const result2 = await plannerWorkflow.execute({
-      userRequest: 'Create a weather app with AI features using Python FastAPI',
+      userRequest: "Create a weather app with AI features using Python FastAPI",
     });
 
-    console.log('\n📋 测试2结果:');
-    console.log(`✅ 执行状态: ${result2.success ? '成功' : '失败'}`);
+    console.log("\n📋 测试2结果:");
+    console.log(`✅ 执行状态: ${result2.success ? "成功" : "失败"}`);
     console.log(`⏱️  执行时间: ${result2.executionTime}ms`);
     console.log(`🎯 动态任务: ${result2.dynamicTasksGenerated || 0}`);
 
     // 测试3: 通用查询
-    console.log('\n' + '='.repeat(60));
-    console.log('🧪 测试3: 通用AI助手查询');
+    console.log("\n" + "=".repeat(60));
+    console.log("🧪 测试3: 通用AI助手查询");
 
     const result3 = await plannerWorkflow.execute({
-      userRequest: 'How can I improve my TypeScript skills?',
+      userRequest: "How can I improve my TypeScript skills?",
     });
 
-    console.log('\n📋 测试3结果:');
-    console.log(`✅ 执行状态: ${result3.success ? '成功' : '失败'}`);
+    console.log("\n📋 测试3结果:");
+    console.log(`✅ 执行状态: ${result3.success ? "成功" : "失败"}`);
     console.log(`⏱️  执行时间: ${result3.executionTime}ms`);
     console.log(`🎯 动态任务: ${result3.dynamicTasksGenerated || 0}`);
 
-    console.log('\n🎉 AI Planner工作流演示完成！');
-    console.log('\n💡 核心特性展示:');
-    console.log('✅ 智能请求分析和工作流规划');
-    console.log('✅ 基于JSON配置的动态任务生成');
-    console.log('✅ 条件策略和任务完成策略');
-    console.log('✅ 复杂多步骤工作流的自动化执行');
-    console.log('✅ 完整的错误处理和状态管理');
+    console.log("\n🎉 AI Planner工作流演示完成！");
+    console.log("\n💡 核心特性展示:");
+    console.log("✅ 智能请求分析和工作流规划");
+    console.log("✅ 基于JSON配置的动态任务生成");
+    console.log("✅ 条件策略和任务完成策略");
+    console.log("✅ 复杂多步骤工作流的自动化执行");
+    console.log("✅ 完整的错误处理和状态管理");
   } catch (error) {
-    console.error('💥 AI Planner工作流执行异常:', error);
+    console.error("💥 AI Planner工作流执行异常:", error);
   }
 }
 
 // 🚀 运行示例
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🎯 本示例展示AI Planner如何智能规划和执行复杂工作流\n');
+  console.log("🎯 本示例展示AI Planner如何智能规划和执行复杂工作流\n");
   runAIPlannerExample().catch(console.error);
 }
 

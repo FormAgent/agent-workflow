@@ -15,7 +15,7 @@
 
 // 🌊 流式数据块接口
 interface StreamingChunk {
-  type: 'progress' | 'data' | 'error' | 'complete';
+  type: "progress" | "data" | "error" | "complete";
   taskName: string;
   content?: any;
   progress?: number;
@@ -26,26 +26,26 @@ interface StreamingChunk {
 // 🧠 模拟LLM流式服务
 class MockStreamingLLMService {
   static async *generateAnalysisStream(
-    prompt: string
+    prompt: string,
   ): AsyncGenerator<string, any, unknown> {
     const responses = [
-      '🔍 开始分析项目结构...',
-      '📂 扫描源码目录',
-      '🔎 检测项目类型: React + TypeScript',
-      '⚡ 分析组件依赖关系...',
-      '📊 统计代码指标:',
-      '  - 总文件数: 127',
-      '  - 代码行数: 8,432',
-      '  - 组件数量: 23',
-      '🚨 发现潜在问题:',
-      '  - 缺少单元测试覆盖',
-      '  - 存在重复代码片段',
-      '  - 部分组件过于复杂',
-      '💡 生成优化建议:',
-      '  1. 添加 Jest 测试框架',
-      '  2. 重构大型组件',
-      '  3. 提取公共工具函数',
-      '✅ 分析完成，生成详细报告...',
+      "🔍 开始分析项目结构...",
+      "📂 扫描源码目录",
+      "🔎 检测项目类型: React + TypeScript",
+      "⚡ 分析组件依赖关系...",
+      "📊 统计代码指标:",
+      "  - 总文件数: 127",
+      "  - 代码行数: 8,432",
+      "  - 组件数量: 23",
+      "🚨 发现潜在问题:",
+      "  - 缺少单元测试覆盖",
+      "  - 存在重复代码片段",
+      "  - 部分组件过于复杂",
+      "💡 生成优化建议:",
+      "  1. 添加 Jest 测试框架",
+      "  2. 重构大型组件",
+      "  3. 提取公共工具函数",
+      "✅ 分析完成，生成详细报告...",
     ];
 
     for (let i = 0; i < responses.length; i++) {
@@ -56,7 +56,7 @@ class MockStreamingLLMService {
       // 在特定步骤返回结构化数据
       if (i === 7) {
         yield JSON.stringify({
-          type: 'metrics',
+          type: "metrics",
           data: {
             files: 127,
             lines: 8432,
@@ -68,18 +68,18 @@ class MockStreamingLLMService {
 
       if (i === 11) {
         yield JSON.stringify({
-          type: 'issues',
+          type: "issues",
           data: [
-            { type: 'test-coverage', severity: 'high', count: 23 },
-            { type: 'code-duplication', severity: 'medium', count: 8 },
-            { type: 'complexity', severity: 'medium', count: 5 },
+            { type: "test-coverage", severity: "high", count: 23 },
+            { type: "code-duplication", severity: "medium", count: 8 },
+            { type: "complexity", severity: "medium", count: 5 },
           ],
         });
       }
     }
 
     return {
-      summary: '项目代码质量分析完成',
+      summary: "项目代码质量分析完成",
       score: 7.5,
       issues: 36,
       recommendations: 12,
@@ -92,17 +92,17 @@ class MockStreamingLLMService {
     unknown
   > {
     const steps = [
-      '🚀 开始性能优化分析...',
-      '📦 分析打包体积',
-      '🔧 检测未使用的依赖',
-      '⚡ 识别性能瓶颈',
-      '💾 分析内存使用',
-      '🎯 生成优化方案:',
-      '  - Bundle 分割优化',
-      '  - 图片懒加载',
-      '  - 代码分割策略',
-      '  - 缓存策略优化',
-      '✅ 性能优化方案生成完成',
+      "🚀 开始性能优化分析...",
+      "📦 分析打包体积",
+      "🔧 检测未使用的依赖",
+      "⚡ 识别性能瓶颈",
+      "💾 分析内存使用",
+      "🎯 生成优化方案:",
+      "  - Bundle 分割优化",
+      "  - 图片懒加载",
+      "  - 代码分割策略",
+      "  - 缓存策略优化",
+      "✅ 性能优化方案生成完成",
     ];
 
     for (const step of steps) {
@@ -111,8 +111,8 @@ class MockStreamingLLMService {
     }
 
     return {
-      bundleReduction: '28%',
-      loadTimeImprovement: '45%',
+      bundleReduction: "28%",
+      loadTimeImprovement: "45%",
       optimizations: 8,
     };
   }
@@ -121,36 +121,36 @@ class MockStreamingLLMService {
 // 🔍 流式代码分析任务
 class StreamingCodeAnalysisTask {
   dependsOn: any[] = [];
-  name = 'streamingCodeAnalysis';
+  name = "streamingCodeAnalysis";
   isStreaming = true;
 
   async execute(input: any): Promise<Record<string, any>> {
     // 保留非流式执行的兼容性
     const result = {
-      analysis: 'Static analysis completed',
+      analysis: "Static analysis completed",
       timestamp: Date.now(),
     };
     return { ...input, ...result };
   }
 
   async *executeStream(
-    input: any
+    input: any,
   ): AsyncGenerator<string, Record<string, any>, unknown> {
-    console.log('🧠 开始流式代码分析...');
+    console.log("🧠 开始流式代码分析...");
 
-    let analysisData: any = {};
+    const analysisData: any = {};
 
     const generator = MockStreamingLLMService.generateAnalysisStream(
-      'Analyze this codebase'
+      "Analyze this codebase",
     );
 
     for await (const chunk of generator) {
       // 尝试解析JSON数据
       try {
         const jsonData = JSON.parse(chunk);
-        if (jsonData.type === 'metrics') {
+        if (jsonData.type === "metrics") {
           analysisData.metrics = jsonData.data;
-        } else if (jsonData.type === 'issues') {
+        } else if (jsonData.type === "issues") {
           analysisData.issues = jsonData.data;
         }
       } catch {
@@ -164,12 +164,12 @@ class StreamingCodeAnalysisTask {
     const finalResult = {
       analysis: {
         ...analysisData,
-        summary: '代码分析完成',
+        summary: "代码分析完成",
         timestamp: Date.now(),
       },
     };
 
-    console.log('✅ 流式代码分析完成');
+    console.log("✅ 流式代码分析完成");
     return { ...input, ...finalResult };
   }
 }
@@ -177,21 +177,21 @@ class StreamingCodeAnalysisTask {
 // 🚀 流式性能优化任务
 class StreamingPerformanceTask {
   dependsOn: any[] = [];
-  name = 'streamingPerformance';
+  name = "streamingPerformance";
   isStreaming = true;
 
   async execute(input: any): Promise<Record<string, any>> {
     const result = {
-      performance: 'Performance analysis completed',
+      performance: "Performance analysis completed",
       timestamp: Date.now(),
     };
     return { ...input, ...result };
   }
 
   async *executeStream(
-    input: any
+    input: any,
   ): AsyncGenerator<string, Record<string, any>, unknown> {
-    console.log('🚀 开始流式性能分析...');
+    console.log("🚀 开始流式性能分析...");
 
     const generator = MockStreamingLLMService.generateOptimizationStream();
 
@@ -201,13 +201,13 @@ class StreamingPerformanceTask {
 
     const finalResult = {
       performance: {
-        optimization: 'Performance optimization completed',
-        improvements: ['bundle-splitting', 'lazy-loading', 'caching'],
+        optimization: "Performance optimization completed",
+        improvements: ["bundle-splitting", "lazy-loading", "caching"],
         timestamp: Date.now(),
       },
     };
 
-    console.log('✅ 流式性能分析完成');
+    console.log("✅ 流式性能分析完成");
     return { ...input, ...finalResult };
   }
 }
@@ -215,7 +215,7 @@ class StreamingPerformanceTask {
 // 📝 流式报告生成任务
 class StreamingReportTask {
   dependsOn: any[] = [];
-  name = 'streamingReport';
+  name = "streamingReport";
   isStreaming = true;
   dependsOn?: any[];
 
@@ -224,21 +224,21 @@ class StreamingReportTask {
   }
 
   async execute(input: any): Promise<Record<string, any>> {
-    const result = { report: 'Report generated', timestamp: Date.now() };
+    const result = { report: "Report generated", timestamp: Date.now() };
     return { ...input, ...result };
   }
 
   async *executeStream(
-    input: any
+    input: any,
   ): AsyncGenerator<string, Record<string, any>, unknown> {
-    console.log('📝 开始生成流式报告...');
+    console.log("📝 开始生成流式报告...");
 
     const reportSteps = [
-      '📊 整合分析数据...',
-      '📈 生成图表和统计...',
-      '💡 生成改进建议...',
-      '📄 格式化最终报告...',
-      '✅ 报告生成完成！',
+      "📊 整合分析数据...",
+      "📈 生成图表和统计...",
+      "💡 生成改进建议...",
+      "📄 格式化最终报告...",
+      "✅ 报告生成完成！",
     ];
 
     for (const step of reportSteps) {
@@ -250,21 +250,21 @@ class StreamingReportTask {
 
     const finalResult = {
       report: {
-        title: '项目分析综合报告',
+        title: "项目分析综合报告",
         sections: {
           codeAnalysis: analysis,
           performanceOptimization: performance,
         },
         generatedAt: new Date().toISOString(),
         recommendations: [
-          '优先解决高优先级代码问题',
-          '实施性能优化建议',
-          '建立持续集成流程',
+          "优先解决高优先级代码问题",
+          "实施性能优化建议",
+          "建立持续集成流程",
         ],
       },
     };
 
-    console.log('✅ 流式报告生成完成');
+    console.log("✅ 流式报告生成完成");
     return { ...input, ...finalResult };
   }
 }
@@ -279,9 +279,9 @@ class SimpleStreamingWorkflow {
   }
 
   async *executeStream(
-    input: any = {}
+    input: any = {},
   ): AsyncGenerator<StreamingChunk, any, unknown> {
-    console.log('🌊 开始执行流式工作流...\n');
+    console.log("🌊 开始执行流式工作流...\n");
 
     const startTime = Date.now();
     const results: Record<string, any> = { ...input };
@@ -290,9 +290,9 @@ class SimpleStreamingWorkflow {
     try {
       // 发送开始信号
       yield {
-        type: 'progress',
-        taskName: 'workflow',
-        content: '工作流开始执行',
+        type: "progress",
+        taskName: "workflow",
+        content: "工作流开始执行",
         progress: 0,
         timestamp: Date.now(),
       };
@@ -302,7 +302,7 @@ class SimpleStreamingWorkflow {
         const taskStartTime = Date.now();
 
         yield {
-          type: 'progress',
+          type: "progress",
           taskName: task.name,
           content: `开始执行任务: ${task.name}`,
           progress: 0,
@@ -324,7 +324,7 @@ class SimpleStreamingWorkflow {
               if (!done) {
                 // 流式数据
                 yield {
-                  type: 'data',
+                  type: "data",
                   taskName: task.name,
                   content: value,
                   timestamp: Date.now(),
@@ -350,7 +350,7 @@ class SimpleStreamingWorkflow {
         const taskDuration = Date.now() - taskStartTime;
 
         yield {
-          type: 'complete',
+          type: "complete",
           taskName: task.name,
           content: `任务完成: ${task.name}`,
           progress: 100,
@@ -363,8 +363,8 @@ class SimpleStreamingWorkflow {
 
         // 整体进度更新
         yield {
-          type: 'progress',
-          taskName: 'workflow',
+          type: "progress",
+          taskName: "workflow",
           content: `已完成 ${completedTasks}/${this.tasks.length} 个任务`,
           progress: Math.round((completedTasks / this.tasks.length) * 100),
           timestamp: Date.now(),
@@ -374,9 +374,9 @@ class SimpleStreamingWorkflow {
       const totalDuration = Date.now() - startTime;
 
       yield {
-        type: 'complete',
-        taskName: 'workflow',
-        content: '工作流执行完成',
+        type: "complete",
+        taskName: "workflow",
+        content: "工作流执行完成",
         progress: 100,
         timestamp: Date.now(),
         metadata: {
@@ -394,8 +394,8 @@ class SimpleStreamingWorkflow {
       };
     } catch (error) {
       yield {
-        type: 'error',
-        taskName: 'workflow',
+        type: "error",
+        taskName: "workflow",
         content: error instanceof Error ? error.message : String(error),
         timestamp: Date.now(),
       };
@@ -415,16 +415,16 @@ function formatStreamChunkForFrontend(chunk: StreamingChunk) {
   const timestamp = new Date(chunk.timestamp).toLocaleTimeString();
 
   switch (chunk.type) {
-    case 'progress':
+    case "progress":
       return `[${timestamp}] 📊 ${chunk.content} (${chunk.progress || 0}%)`;
-    case 'data':
+    case "data":
       return `[${timestamp}] 💬 ${chunk.taskName}: ${chunk.content}`;
-    case 'complete':
+    case "complete":
       const duration = chunk.metadata?.duration
         ? ` (${chunk.metadata.duration}ms)`
-        : '';
+        : "";
       return `[${timestamp}] ✅ ${chunk.content}${duration}`;
-    case 'error':
+    case "error":
       return `[${timestamp}] ❌ 错误: ${chunk.content}`;
     default:
       return `[${timestamp}] ℹ️  ${chunk.content}`;
@@ -433,7 +433,7 @@ function formatStreamChunkForFrontend(chunk: StreamingChunk) {
 
 // 🚀 主函数 - 运行流式工作流示例
 async function runStreamingWorkflowExample() {
-  console.log('🌊 开始运行流式工作流示例\n');
+  console.log("🌊 开始运行流式工作流示例\n");
 
   try {
     // 创建流式任务
@@ -442,19 +442,19 @@ async function runStreamingWorkflowExample() {
     const reportTask = new StreamingReportTask([analysisTask, performanceTask]);
 
     // 方法1: 使用简化的流式工作流
-    console.log('🎯 方法1: 简化流式工作流');
-    console.log('='.repeat(60));
+    console.log("🎯 方法1: 简化流式工作流");
+    console.log("=".repeat(60));
 
     const streamingWorkflow = new SimpleStreamingWorkflow()
       .addTask(analysisTask)
       .addTask(performanceTask)
       .addTask(reportTask);
 
-    console.log('🔄 开始流式执行，实时输出：\n');
+    console.log("🔄 开始流式执行，实时输出：\n");
 
     const streamGenerator = streamingWorkflow.executeStream({
-      projectPath: './src',
-      analysisType: 'comprehensive',
+      projectPath: "./src",
+      analysisType: "comprehensive",
     });
 
     // 模拟前端实时接收数据
@@ -473,14 +473,14 @@ async function runStreamingWorkflowExample() {
     const { value: result } = await streamGenerator.next();
     finalResult = result;
 
-    console.log('\n' + '='.repeat(60));
-    console.log('🎉 流式工作流执行完成！');
-    console.log(`✅ 状态: ${finalResult?.success ? '成功' : '失败'}`);
+    console.log("\n" + "=".repeat(60));
+    console.log("🎉 流式工作流执行完成！");
+    console.log(`✅ 状态: ${finalResult?.success ? "成功" : "失败"}`);
     console.log(`⏱️  总时间: ${finalResult?.executionTime || 0}ms`);
     console.log(`📊 完成任务: ${finalResult?.tasksCompleted || 0}`);
 
     if (finalResult?.success && finalResult?.data?.report) {
-      console.log('\n📋 最终报告摘要:');
+      console.log("\n📋 最终报告摘要:");
       const report = finalResult.data.report;
       console.log(`📄 标题: ${report.title}`);
       console.log(`📈 建议数量: ${report.recommendations?.length || 0}`);
@@ -488,9 +488,9 @@ async function runStreamingWorkflowExample() {
     }
 
     // 方法2: 展示如何与前端集成
-    console.log('\n' + '='.repeat(60));
-    console.log('🎯 方法2: 前端集成示例');
-    console.log('='.repeat(60));
+    console.log("\n" + "=".repeat(60));
+    console.log("🎯 方法2: 前端集成示例");
+    console.log("=".repeat(60));
 
     console.log(`
 💡 前端集成示例代码:
@@ -597,28 +597,28 @@ export default {
 };
     `);
 
-    console.log('\n🌟 流式工作流的优势:');
-    console.log('  ✨ 实时反馈，用户体验更好');
-    console.log('  🚀 支持长时间运行的任务');
-    console.log('  📊 进度可视化');
-    console.log('  🔄 可中断和恢复');
-    console.log('  💬 实时LLM响应展示');
-    console.log('  🎯 前端友好的数据格式');
+    console.log("\n🌟 流式工作流的优势:");
+    console.log("  ✨ 实时反馈，用户体验更好");
+    console.log("  🚀 支持长时间运行的任务");
+    console.log("  📊 进度可视化");
+    console.log("  🔄 可中断和恢复");
+    console.log("  💬 实时LLM响应展示");
+    console.log("  🎯 前端友好的数据格式");
 
-    console.log('\n📝 实现要点:');
-    console.log('  1. 任务实现 executeStream 方法返回 AsyncGenerator');
-    console.log('  2. 工作流返回流式结果而非最终结果');
-    console.log('  3. 前端通过 SSE/WebSocket 实时接收数据');
-    console.log('  4. 支持进度、数据、错误、完成等不同类型的流式事件');
-    console.log('  5. 可以在不中断流式输出的情况下获取最终结果');
+    console.log("\n📝 实现要点:");
+    console.log("  1. 任务实现 executeStream 方法返回 AsyncGenerator");
+    console.log("  2. 工作流返回流式结果而非最终结果");
+    console.log("  3. 前端通过 SSE/WebSocket 实时接收数据");
+    console.log("  4. 支持进度、数据、错误、完成等不同类型的流式事件");
+    console.log("  5. 可以在不中断流式输出的情况下获取最终结果");
   } catch (error) {
-    console.error('💥 流式工作流执行异常:', error);
+    console.error("💥 流式工作流执行异常:", error);
   }
 }
 
 // 🚀 运行示例
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('🌊 流式工作流演示 - 专为前端实时显示设计\n');
+  console.log("🌊 流式工作流演示 - 专为前端实时显示设计\n");
   runStreamingWorkflowExample().catch(console.error);
 }
 

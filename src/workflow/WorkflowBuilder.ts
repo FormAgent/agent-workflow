@@ -1,5 +1,5 @@
-import type { TaskInput } from './Task';
-import { ContextManager } from './ContextManager';
+import { ContextManager } from "./ContextManager";
+import type { TaskInput } from "./Task";
 
 // DAG任务抽象基类定义 - 确保依赖关系一致性
 export abstract class DAGTask {
@@ -16,14 +16,14 @@ export abstract class DAGTask {
 // 🔄 流式DAG任务抽象类（扩展）
 export abstract class StreamingDAGTask extends DAGTask {
   executeStream?(
-    input: TaskInput
+    input: TaskInput,
   ): AsyncGenerator<StreamChunk, Record<string, any>, unknown>;
   isStreaming?: boolean;
 }
 
 // 🌊 流式数据块
 export interface StreamChunk {
-  type: 'progress' | 'data' | 'error' | 'complete';
+  type: "progress" | "data" | "error" | "complete";
   taskName: string;
   content?: any;
   progress?: number;
@@ -59,7 +59,7 @@ export interface WorkflowContext {
 // 任务执行结果
 export interface TaskExecutionResult {
   taskName: string;
-  status: 'completed' | 'failed' | 'skipped';
+  status: "completed" | "failed" | "skipped";
   output?: any;
   error?: string;
   duration: number;
@@ -157,14 +157,14 @@ export class WorkflowBuilder {
   // 条件任务生成 - 语法糖
   whenCondition(
     condition: (context: WorkflowContext) => boolean,
-    taskGenerator: (context: WorkflowContext) => Promise<DAGTask[]>
+    taskGenerator: (context: WorkflowContext) => Promise<DAGTask[]>,
   ): this {
     return this.addDynamicStrategy({
       name: `condition-${this.dynamicStrategies.length}`,
       condition: (context) => {
         // Wait for all current tasks to complete before checking conditions
         const history = context.getExecutionHistory();
-        const completedTasks = history.filter((h) => h.status === 'completed');
+        const completedTasks = history.filter((h) => h.status === "completed");
 
         // If there are completed tasks, check the condition
         if (completedTasks.length > 0) {
@@ -182,15 +182,15 @@ export class WorkflowBuilder {
     taskName: string,
     resultProcessor: (
       result: any,
-      context: WorkflowContext
-    ) => Promise<DAGTask[]>
+      context: WorkflowContext,
+    ) => Promise<DAGTask[]>,
   ): this {
     return this.addDynamicStrategy({
       name: `on-complete-${taskName}`,
       condition: (context) => {
         const history = context.getExecutionHistory();
         return history.some(
-          (h) => h.taskName === taskName && h.status === 'completed'
+          (h) => h.taskName === taskName && h.status === "completed",
         );
       },
       generator: async (context) => {
@@ -205,7 +205,7 @@ export class WorkflowBuilder {
   // 基于上下文变化的任务生成
   onContextChange(
     contextKey: string,
-    taskGenerator: (value: any, context: WorkflowContext) => Promise<DAGTask[]>
+    taskGenerator: (value: any, context: WorkflowContext) => Promise<DAGTask[]>,
   ): this {
     return this.addDynamicStrategy({
       name: `on-context-${contextKey}`,
@@ -228,7 +228,7 @@ export class WorkflowBuilder {
       return new StrategyBasedWorkflow(
         this.config,
         this.staticTasks,
-        this.dynamicStrategies
+        this.dynamicStrategies,
       );
     }
 
@@ -243,7 +243,7 @@ export class WorkflowBuilder {
       return new StreamingStrategyBasedWorkflow(
         this.config,
         this.staticTasks,
-        this.dynamicStrategies
+        this.dynamicStrategies,
       );
     }
 
@@ -258,7 +258,7 @@ export class WorkflowBuilder {
       return new AISDKStreamingStrategyWorkflow(
         this.config,
         this.staticTasks,
-        this.dynamicStrategies
+        this.dynamicStrategies,
       );
     }
 
@@ -338,7 +338,7 @@ class EnhancedWorkflowContext implements WorkflowContext {
 abstract class BaseWorkflow {
   protected context: EnhancedWorkflowContext;
   protected config: WorkflowConfig;
-  protected startTime: number = 0;
+  protected startTime = 0;
   protected taskResults: Map<string, TaskExecutionResult> = new Map();
 
   constructor(config: WorkflowConfig) {
@@ -365,7 +365,7 @@ abstract class BaseWorkflow {
       const output = await task.execute(input);
 
       // 将任务输出存储在任务名称下
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       this.context.set(taskName, output);
 
       // 也将输出的各个字段直接存储到上下文（保持兼容性）
@@ -383,7 +383,7 @@ abstract class BaseWorkflow {
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'completed',
+        status: "completed",
         output: output,
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -393,7 +393,7 @@ abstract class BaseWorkflow {
       this.context.addExecutionResult(result);
     } catch (error) {
       // 生成唯一的任务键，处理重复名称
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       let uniqueKey = taskName;
       let counter = 1;
       while (this.taskResults.has(uniqueKey)) {
@@ -403,7 +403,7 @@ abstract class BaseWorkflow {
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'failed',
+        status: "failed",
         error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -461,12 +461,12 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
     for (const level of levels) {
       // Execute all tasks at the current level, don't stop due to individual task failures
       const results = await Promise.allSettled(
-        level.map((task) => this.executeTask(task))
+        level.map((task) => this.executeTask(task)),
       );
 
       // Check for failed tasks
       for (const result of results) {
-        if (result.status === 'rejected') {
+        if (result.status === "rejected") {
           hasError = true;
           lastError = result.reason;
         }
@@ -525,7 +525,7 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
     // Detect circular dependencies
     if (processedCount < this.tasks.length) {
       throw new Error(
-        'Circular dependency detected, unable to execute workflow'
+        "Circular dependency detected, unable to execute workflow",
       );
     }
 
@@ -537,14 +537,14 @@ class StaticWorkflow extends BaseWorkflow implements Workflow {
 class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
   protected tasks: DAGTask[];
   protected strategies: DynamicStrategy[];
-  protected dynamicTasksGenerated: number = 0;
-  protected currentStep: number = 0;
+  protected dynamicTasksGenerated = 0;
+  protected currentStep = 0;
   protected usedStrategies: Set<string> = new Set();
 
   constructor(
     config: WorkflowConfig,
     tasks: DAGTask[],
-    strategies: DynamicStrategy[]
+    strategies: DynamicStrategy[],
   ) {
     super(config);
     this.tasks = [...tasks];
@@ -581,20 +581,20 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
             .getExecutionHistory()
             .filter(
               (h) =>
-                h.status === 'completed' ||
-                h.status === 'failed' ||
-                h.status === 'skipped'
+                h.status === "completed" ||
+                h.status === "failed" ||
+                h.status === "skipped",
             )
-            .map((h) => h.taskName)
+            .map((h) => h.taskName),
         );
 
         const unprocessedTasks = this.tasks.filter(
-          (task) => !processedTaskNames.has(task.name || '')
+          (task) => !processedTaskNames.has(task.name || ""),
         );
 
         if (unprocessedTasks.length > 0) {
           throw new Error(
-            'Circular dependency detected, unable to execute workflow'
+            "Circular dependency detected, unable to execute workflow",
           );
         }
       }
@@ -636,13 +636,13 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
 
     // Execute ready tasks in parallel, don't stop due to individual task failures
     const results = await Promise.allSettled(
-      readyTasks.map((task) => this.executeTask(task))
+      readyTasks.map((task) => this.executeTask(task)),
     );
 
     // Log failed tasks but continue execution
     for (const result of results) {
-      if (result.status === 'rejected') {
-        console.warn('Task execution failed:', result.reason);
+      if (result.status === "rejected") {
+        console.warn("Task execution failed:", result.reason);
       }
     }
   }
@@ -653,23 +653,23 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
         .getExecutionHistory()
         .filter(
           (h) =>
-            h.status === 'completed' ||
-            h.status === 'failed' ||
-            h.status === 'skipped'
+            h.status === "completed" ||
+            h.status === "failed" ||
+            h.status === "skipped",
         )
-        .map((h) => h.taskName)
+        .map((h) => h.taskName),
     );
 
     return this.tasks.filter((task) => {
       // Check if already processed (completed, failed, or skipped)
-      if (processedTaskNames.has(task.name || '')) {
+      if (processedTaskNames.has(task.name || "")) {
         return false;
       }
 
       // Check if dependencies are satisfied (as long as dependency tasks have been processed, regardless of success/failure)
       if (task.dependsOn) {
         return task.dependsOn.every((dep) =>
-          processedTaskNames.has(dep.name || '')
+          processedTaskNames.has(dep.name || ""),
         );
       }
 
@@ -680,7 +680,7 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
   protected async evaluateStrategiesAndGenerateTasks(): Promise<void> {
     // Sort strategies by priority
     const sortedStrategies = [...this.strategies].sort(
-      (a, b) => (b.priority || 0) - (a.priority || 0)
+      (a, b) => (b.priority || 0) - (a.priority || 0),
     );
 
     for (const strategy of sortedStrategies) {
@@ -704,7 +704,7 @@ class StrategyBasedWorkflow extends BaseWorkflow implements Workflow {
             }
 
             console.log(
-              `🎯 Strategy "${strategy.name}" generated ${newTasks.length} new tasks`
+              `🎯 Strategy "${strategy.name}" generated ${newTasks.length} new tasks`,
             );
           }
         }
@@ -736,7 +736,7 @@ class StreamingStaticWorkflow
       return (
         this.streamResult || {
           success: false,
-          error: new Error('Streaming execution not completed'),
+          error: new Error("Streaming execution not completed"),
           executionTime: 0,
           taskResults: new Map(),
         }
@@ -750,7 +750,7 @@ class StreamingStaticWorkflow
   }
 
   private async *createExecutionStream(
-    input: TaskInput
+    input: TaskInput,
   ): AsyncGenerator<StreamChunk, WorkflowResult, unknown> {
     this.startTime = Date.now();
 
@@ -761,9 +761,9 @@ class StreamingStaticWorkflow
       });
 
       yield {
-        type: 'progress',
-        taskName: 'workflow',
-        content: 'Workflow execution started',
+        type: "progress",
+        taskName: "workflow",
+        content: "Workflow execution started",
         progress: 0,
         timestamp: Date.now(),
       };
@@ -782,9 +782,9 @@ class StreamingStaticWorkflow
       this.streamResult = result;
 
       yield {
-        type: 'complete',
-        taskName: 'workflow',
-        content: 'Workflow execution completed',
+        type: "complete",
+        taskName: "workflow",
+        content: "Workflow execution completed",
         progress: 100,
         timestamp: Date.now(),
       };
@@ -802,8 +802,8 @@ class StreamingStaticWorkflow
       this.streamResult = errorResult;
 
       yield {
-        type: 'error',
-        taskName: 'workflow',
+        type: "error",
+        taskName: "workflow",
         content: error instanceof Error ? error.message : String(error),
         timestamp: Date.now(),
       };
@@ -828,11 +828,11 @@ class StreamingStaticWorkflow
       for await (const taskStream of taskPromises) {
         for await (const chunk of taskStream) {
           yield chunk;
-          if (chunk.type === 'complete') {
+          if (chunk.type === "complete") {
             completedTasks++;
             yield {
-              type: 'progress',
-              taskName: 'workflow',
+              type: "progress",
+              taskName: "workflow",
               content: `Completed ${completedTasks}/${totalTasks} tasks`,
               progress: Math.round((completedTasks / totalTasks) * 100),
               timestamp: Date.now(),
@@ -844,13 +844,13 @@ class StreamingStaticWorkflow
   }
 
   private async *executeTaskStream(
-    task: StreamingDAGTask
+    task: StreamingDAGTask,
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const taskStartTime = Date.now();
 
     try {
       yield {
-        type: 'progress',
+        type: "progress",
         taskName: task.name,
         content: `Starting task execution: ${task.name}`,
         progress: 0,
@@ -888,7 +888,7 @@ class StreamingStaticWorkflow
       }
 
       // Store results
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       this.context.set(taskName, output);
 
       for (const [key, value] of Object.entries(output)) {
@@ -905,7 +905,7 @@ class StreamingStaticWorkflow
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'completed',
+        status: "completed",
         output: output,
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -915,7 +915,7 @@ class StreamingStaticWorkflow
       this.context.addExecutionResult(result);
 
       yield {
-        type: 'complete',
+        type: "complete",
         taskName: task.name,
         content: `Task completed: ${task.name}`,
         progress: 100,
@@ -923,7 +923,7 @@ class StreamingStaticWorkflow
         metadata: { duration: result.duration },
       };
     } catch (error) {
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       let uniqueKey = taskName;
       let counter = 1;
       while (this.taskResults.has(uniqueKey)) {
@@ -933,7 +933,7 @@ class StreamingStaticWorkflow
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'failed',
+        status: "failed",
         error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -943,7 +943,7 @@ class StreamingStaticWorkflow
       this.context.addExecutionResult(result);
 
       yield {
-        type: 'error',
+        type: "error",
         taskName: task.name,
         content: error instanceof Error ? error.message : String(error),
         timestamp: Date.now(),
@@ -973,7 +973,7 @@ class StreamingStrategyBasedWorkflow
       return (
         this.streamResult || {
           success: false,
-          error: new Error('Streaming execution not completed'),
+          error: new Error("Streaming execution not completed"),
           executionTime: 0,
           taskResults: new Map(),
         }
@@ -987,7 +987,7 @@ class StreamingStrategyBasedWorkflow
   }
 
   private async *createDynamicExecutionStream(
-    input: TaskInput
+    input: TaskInput,
   ): AsyncGenerator<StreamChunk, WorkflowResult, unknown> {
     this.startTime = Date.now();
     this.dynamicTasksGenerated = 0;
@@ -1000,9 +1000,9 @@ class StreamingStrategyBasedWorkflow
       });
 
       yield {
-        type: 'progress',
-        taskName: 'workflow',
-        content: 'Dynamic workflow execution started',
+        type: "progress",
+        taskName: "workflow",
+        content: "Dynamic workflow execution started",
         progress: 0,
         timestamp: Date.now(),
       };
@@ -1012,12 +1012,12 @@ class StreamingStrategyBasedWorkflow
         this.currentStep++;
 
         yield {
-          type: 'progress',
-          taskName: 'workflow',
+          type: "progress",
+          taskName: "workflow",
           content: `Executing step ${this.currentStep}`,
           progress: Math.min(
             (this.currentStep / (this.config.maxDynamicSteps || 50)) * 100,
-            90
+            90,
           ),
           timestamp: Date.now(),
         };
@@ -1033,8 +1033,8 @@ class StreamingStrategyBasedWorkflow
 
         if (this.dynamicTasksGenerated > 0) {
           yield {
-            type: 'data',
-            taskName: 'strategy',
+            type: "data",
+            taskName: "strategy",
             content: `Dynamically generated ${this.dynamicTasksGenerated} new tasks`,
             timestamp: Date.now(),
           };
@@ -1054,9 +1054,9 @@ class StreamingStrategyBasedWorkflow
       this.streamResult = result;
 
       yield {
-        type: 'complete',
-        taskName: 'workflow',
-        content: 'Dynamic workflow execution completed',
+        type: "complete",
+        taskName: "workflow",
+        content: "Dynamic workflow execution completed",
         progress: 100,
         timestamp: Date.now(),
       };
@@ -1076,8 +1076,8 @@ class StreamingStrategyBasedWorkflow
       this.streamResult = errorResult;
 
       yield {
-        type: 'error',
-        taskName: 'workflow',
+        type: "error",
+        taskName: "workflow",
         content: error instanceof Error ? error.message : String(error),
         timestamp: Date.now(),
       };
@@ -1087,13 +1087,13 @@ class StreamingStrategyBasedWorkflow
   }
 
   private async *executeTaskStreamForStrategy(
-    task: StreamingDAGTask
+    task: StreamingDAGTask,
   ): AsyncGenerator<StreamChunk, void, unknown> {
     const taskStartTime = Date.now();
 
     try {
       yield {
-        type: 'progress',
+        type: "progress",
         taskName: task.name,
         content: `Starting dynamic task execution: ${task.name}`,
         progress: 0,
@@ -1131,7 +1131,7 @@ class StreamingStrategyBasedWorkflow
       }
 
       // Store results (same logic as base class)
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       this.context.set(taskName, output);
 
       for (const [key, value] of Object.entries(output)) {
@@ -1147,7 +1147,7 @@ class StreamingStrategyBasedWorkflow
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'completed',
+        status: "completed",
         output: output,
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -1157,7 +1157,7 @@ class StreamingStrategyBasedWorkflow
       this.context.addExecutionResult(result);
 
       yield {
-        type: 'complete',
+        type: "complete",
         taskName: task.name,
         content: `Dynamic task completed: ${task.name}`,
         progress: 100,
@@ -1165,9 +1165,9 @@ class StreamingStrategyBasedWorkflow
         metadata: { duration: result.duration },
       };
     } catch (error) {
-      console.warn('Dynamic task execution failed:', error);
+      console.warn("Dynamic task execution failed:", error);
 
-      const taskName = task.name || '';
+      const taskName = task.name || "";
       let uniqueKey = taskName;
       let counter = 1;
       while (this.taskResults.has(uniqueKey)) {
@@ -1177,7 +1177,7 @@ class StreamingStrategyBasedWorkflow
 
       const result: TaskExecutionResult = {
         taskName: taskName,
-        status: 'failed',
+        status: "failed",
         error: error instanceof Error ? error.message : String(error),
         duration: Date.now() - taskStartTime,
         timestamp: Date.now(),
@@ -1187,7 +1187,7 @@ class StreamingStrategyBasedWorkflow
       this.context.addExecutionResult(result);
 
       yield {
-        type: 'error',
+        type: "error",
         taskName: task.name,
         content: error instanceof Error ? error.message : String(error),
         timestamp: Date.now(),
@@ -1241,7 +1241,7 @@ class AISDKStreamingStaticWorkflow
 
             if (aiTask.isAISDKStreaming && aiTask.executeStreamAI) {
               const streamResult = await aiTask.executeStreamAI(
-                self.context.getAll()
+                self.context.getAll(),
               );
 
               if (streamResult.textStream) {
@@ -1280,7 +1280,7 @@ class AISDKStreamingStaticWorkflow
           self.context.set(key, value);
         });
 
-        yield { type: 'workflow-start', data: { status: 'starting' } };
+        yield { type: "workflow-start", data: { status: "starting" } };
 
         const levels = self.computeExecutionLevels();
 
@@ -1288,24 +1288,24 @@ class AISDKStreamingStaticWorkflow
           for (const task of level) {
             const aiTask = task as AISDKStreamingTask;
 
-            yield { type: 'task-start', data: { taskName: task.name } };
+            yield { type: "task-start", data: { taskName: task.name } };
 
             if (aiTask.isAISDKStreaming && aiTask.executeStreamAI) {
               const streamResult = await aiTask.executeStreamAI(
-                self.context.getAll()
+                self.context.getAll(),
               );
 
               if (streamResult.fullStream) {
                 for await (const chunk of streamResult.fullStream) {
                   dataChunks.push(chunk);
-                  yield { type: 'ai-chunk', data: chunk };
+                  yield { type: "ai-chunk", data: chunk };
                 }
               }
             } else {
               // 执行普通任务
               await self.executeTask(task);
               yield {
-                type: 'task-complete',
+                type: "task-complete",
                 data: {
                   taskName: task.name,
                   result: self.context.get(task.name),
@@ -1316,15 +1316,15 @@ class AISDKStreamingStaticWorkflow
         }
 
         yield {
-          type: 'workflow-complete',
+          type: "workflow-complete",
           data: {
-            status: 'completed',
+            status: "completed",
             finalResult: self.context.getAll(),
           },
         };
       } catch (error) {
         yield {
-          type: 'workflow-error',
+          type: "workflow-error",
           data: {
             error: error instanceof Error ? error.message : String(error),
           },
@@ -1359,9 +1359,9 @@ class AISDKStreamingStaticWorkflow
 
         return new Response(stream, {
           headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
           },
         });
       },
@@ -1436,7 +1436,7 @@ class AISDKStreamingStrategyWorkflow
 
             if (aiTask.isAISDKStreaming && aiTask.executeStreamAI) {
               const streamResult = await aiTask.executeStreamAI(
-                self.context.getAll()
+                self.context.getAll(),
               );
 
               if (streamResult.textStream) {
@@ -1476,7 +1476,7 @@ class AISDKStreamingStrategyWorkflow
           self.context.set(key, value);
         });
 
-        yield { type: 'dynamic-workflow-start', data: { status: 'starting' } };
+        yield { type: "dynamic-workflow-start", data: { status: "starting" } };
 
         self.currentStep = 0;
         self.dynamicTasksGenerated = 0;
@@ -1486,7 +1486,7 @@ class AISDKStreamingStrategyWorkflow
           self.currentStep++;
 
           yield {
-            type: 'dynamic-step',
+            type: "dynamic-step",
             data: {
               step: self.currentStep,
               maxSteps: self.config.maxDynamicSteps || 50,
@@ -1498,23 +1498,23 @@ class AISDKStreamingStrategyWorkflow
           for (const task of readyTasks) {
             const aiTask = task as AISDKStreamingTask;
 
-            yield { type: 'task-start', data: { taskName: task.name } };
+            yield { type: "task-start", data: { taskName: task.name } };
 
             if (aiTask.isAISDKStreaming && aiTask.executeStreamAI) {
               const streamResult = await aiTask.executeStreamAI(
-                self.context.getAll()
+                self.context.getAll(),
               );
 
               if (streamResult.fullStream) {
                 for await (const chunk of streamResult.fullStream) {
                   dataChunks.push(chunk);
-                  yield { type: 'ai-chunk', data: chunk };
+                  yield { type: "ai-chunk", data: chunk };
                 }
               }
             } else {
               await self.executeTask(task);
               yield {
-                type: 'task-complete',
+                type: "task-complete",
                 data: {
                   taskName: task.name,
                   result: self.context.get(task.name),
@@ -1530,7 +1530,7 @@ class AISDKStreamingStrategyWorkflow
 
           if (afterCount > beforeCount) {
             yield {
-              type: 'dynamic-tasks-generated',
+              type: "dynamic-tasks-generated",
               data: {
                 newTasks: afterCount - beforeCount,
                 totalGenerated: self.dynamicTasksGenerated,
@@ -1540,9 +1540,9 @@ class AISDKStreamingStrategyWorkflow
         }
 
         yield {
-          type: 'dynamic-workflow-complete',
+          type: "dynamic-workflow-complete",
           data: {
-            status: 'completed',
+            status: "completed",
             totalSteps: self.currentStep,
             dynamicTasksGenerated: self.dynamicTasksGenerated,
             finalResult: self.context.getAll(),
@@ -1550,7 +1550,7 @@ class AISDKStreamingStrategyWorkflow
         };
       } catch (error) {
         yield {
-          type: 'dynamic-workflow-error',
+          type: "dynamic-workflow-error",
           data: {
             error: error instanceof Error ? error.message : String(error),
           },
@@ -1585,9 +1585,9 @@ class AISDKStreamingStrategyWorkflow
 
         return new Response(stream, {
           headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
           },
         });
       },

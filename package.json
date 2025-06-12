@@ -2,13 +2,7 @@
   "name": "agent-workflow",
   "version": "2.1.0",
   "type": "module",
-  "files": [
-    "dist",
-    "README.md",
-    "README.ZH.md",
-    "README.JA.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "README.md", "README.ZH.md", "README.JA.md", "LICENSE"],
   "main": "./dist/agent-workflow.umd.cjs",
   "module": "./dist/agent-workflow.js",
   "types": "./dist/index.d.ts",
@@ -57,12 +51,7 @@
     "vite-plugin-dts": "^3.7.3",
     "zod": "^3.24.1"
   },
-  "keywords": [
-    "workflow",
-    "dag",
-    "task",
-    "typescript"
-  ],
+  "keywords": ["workflow", "dag", "task", "typescript"],
   "author": "baryon",
   "license": "MIT",
   "repository": {

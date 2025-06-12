@@ -1,4 +1,4 @@
-import { type DAGTask } from './WorkflowBuilder';
+import type { DAGTask } from "./WorkflowBuilder";
 
 export interface TaskDefinition {
   name: string;
@@ -34,7 +34,7 @@ export class TaskRegistry {
 
   getTasksByCapability(capability: string): TaskDefinition[] {
     return this.getAllTasks().filter((task) =>
-      task.capabilities.includes(capability)
+      task.capabilities.includes(capability),
     );
   }
 
